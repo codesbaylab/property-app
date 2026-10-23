@@ -280,3 +280,19 @@
   .ph.add { display: grid; place-items: center; align-content: center; gap: 2px; border: 1.5px dashed var(--line); color: var(--accent); cursor: pointer; font-size: 13px; font-weight: 600; } .ph.add svg { width: 22px; height: 22px; }
   .pacts { display: flex; gap: 10px; position: sticky; bottom: 0; padding: 12px 0; background: linear-gradient(to top, var(--bg) 70%, transparent); }
   .pacts .btn:disabled { opacity: .6; }
+
+  /* ---- chat ---- */
+  .li.conv img, .tl img { width: 52px; height: 52px; border-radius: 14px; object-fit: cover; flex: none; }
+  .li.conv .cmeta { display: grid; justify-items: end; gap: 6px; color: var(--muted); font-size: 12px; flex: none; }
+  .bdg.inline { position: static; display: inline-block; font-style: normal; }
+  .thread .tl { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 10px; border: 1px solid var(--line); border-radius: 18px; margin-bottom: 14px; }
+  .thread .tl .tx { flex: 1; min-width: 0; } .thread .tl b { display: block; } .thread .tl small { display: block; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .thread .tl .ic { width: 52px; height: 52px; border-radius: 14px; background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); display: grid; place-items: center; flex: none; }
+  .thread .tl > svg { width: 17px; height: 17px; color: var(--muted); }
+  .msgs { display: grid; gap: 8px; align-content: start; min-height: 40vh; padding-bottom: 8px; }
+  .msg { max-width: 80%; justify-self: start; background: var(--bg2); border-radius: 18px 18px 18px 6px; padding: 10px 14px; }
+  .msg.me { justify-self: end; background: var(--accent); color: var(--accent-fg); border-radius: 18px 18px 6px 18px; }
+  .msg p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; } .msg small { display: block; opacity: .65; font-size: 11px; margin-top: 3px; text-align: right; }
+  .compose { display: flex; gap: 10px; position: sticky; bottom: 0; padding: 10px 0; background: var(--bg); }
+  .compose input { flex: 1; min-width: 0; padding: 13px 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg2); font: inherit; color: var(--fg); outline: none; } .compose input:focus { border-color: var(--accent); }
+  .compose .btn { flex: none; padding: 12px 22px; }

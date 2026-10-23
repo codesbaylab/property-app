@@ -1,6 +1,6 @@
 # Nestmap build plan
 
-Status: **phases 0 to 3 are built; phases 4 to 7 are not started.** Originally written 2026-10-19, updated 2026-10-23 to match the code. Section 4 has the current status of each phase, and the notes under it list where the build differs from this plan.
+Status: **phases 0 to 3 are built, phase 4 has text chat only; phases 5 to 7 are mostly not started.** Originally written 2026-10-19, updated 2026-10-23 to match the code. Section 4 has the current status of each phase, and the notes under it list where the build differs from this plan.
 
 ## 1. Decisions
 
@@ -81,7 +81,7 @@ Each phase ends with something you can open and use.
 | **1. Map and listings (read)** | Tables, 300+ seed listings, MapLibre map, the left Buy/Rent control, filters, clusters, server-rendered detail pages, share links | **Done.** About 360 sample listings around Kozhikode, price labels that switch with zoom, shareable `/home/[id]` pages. Place search uses the free OpenStreetMap Nominatim service and the map uses a free Esri demo basemap, both for demo use only. Not done: switching to MapTiler (set the style URLs in `.env.local`) |
 | **2. Accounts** | Phone OTP login, profile, Saved homes and searches, the nav pages | **Mostly done.** Sign in and sign up use **email and password**, not phone OTP (see notes). Saved homes are stored on the account and merged from the browser on first sign-in. Not done: saved searches, alerts |
 | **3. Posting and review** | Post flow with photo upload, drafts, My homes, edit, renewal and expiry, **admin review queue**, rejected-listing feedback | **Mostly done.** Post form with map pin and up to 8 photos, drafts, My homes with status and the team's feedback, send for review, withdraw, hide, mark sold or rented, delete, 3-listing limit, admin review queue. Not done: renewal and automatic expiry, editing a live listing (owners can only hide or close it), duplicate-photo checks. The posting migration (`20261026090000_posting.sql`) must be run with `npm run db:migrate` |
-| **4. Messages and visits** | Realtime chat, visit requests and calendar, notifications and push | **Not started.** The Inbox page says "coming soon" |
+| **4. Messages and visits** | Realtime chat, visit requests and calendar, notifications and push | **Chat is built (text only).** Message on a listing opens a chat with whoever posted it; the Inbox lists conversations with the last message and unread counts; messages arrive live; the nav shows an unread badge; 20 messages a minute limit. Not done: visit requests and calendar, push and email notifications, photo or location messages, reporting a message, an admin view of chats. The chat migration (`20261027090000_chat.sql`) must be run with `npm run db:migrate`. **Calls are not built** (the Call button is a placeholder; see the open question on masked calls) |
 | **5. Agents** | Verification, public agent profile, lead board, bulk CSV import, reviews, admin user and agent screens | **Barely started.** Admin can list users, suspend or ban them, and the profile shows a verified-agent badge. Not done: agent applications and document checks, agent profile pages, CSV import, reviews |
 | **6. Money and support** | Cashfree boosts and Agent Pro, GST receipts, help and tickets, reports, announcements, compliance requests | **Partly done.** Listing reports and the admin reports screen are built, with auto-hide after three reports. Not done: payments, support tickets, announcements, data requests |
 | **7. Launch hardening** | Sentry, PostHog, rate limits, backups, legal pages and consent, PWA install checks, load test, Meta Pixel with consent | **Barely started.** The app installs as a PWA and has a friendly not-found page. Not done: everything else in this phase |
@@ -93,6 +93,7 @@ Phases 1 to 3 are the first public version. Phases 4 and 5 are what make it wort
 ### Where the build differs from the plan
 - **Sign-in is email and password**, not phone OTP. Phone login needs MSG91 and DLT registration, which have not been set up. The profile page says phone login is coming soon.
 - **Saved searches, notifications and push** are not built.
+- **Chat tables:** `conversations` and `messages` are simpler than section 3. Read state is two timestamps on the conversation (`buyer_last_read_at`, `seller_last_read_at`) instead of `messages.read_at`, and messages are text only (no `kind` or `attachment_path`). Conversations are created through `start_conversation()`, one per buyer and listing; people cannot message their own listing. A seller sees a conversation only once it has a message.
 - **Tables built so far:** profiles, admin_users, listings, listing_photos, saved_listings, reports and audit_log. The rest of section 3 is still to come, with later phases adding their own migrations.
 - **Column names differ slightly:** `listing_photos.sort_order` (plan: `position`), `listings.source` allows `manual`, `import` or `seed`, and `profiles` has no `email` column because email lives in Supabase Auth.
 - **Fields in section 3 not yet in the database:** `preferred_tenants`, `pets_allowed`, `renewed_at`, `import_batch_id`, and the agent profile columns.
@@ -146,4 +147,5 @@ Checked on 2026-10-19 with web search and direct requests to the domains. I coul
 ## 9. Open questions
 
 1. Choose a new name (see above).
-2. Do you have a registered business entity? Cashfree already works, but MSG91 DLT registration and WhatsApp Business also need one.
+2. How should calls work? Masked phone calls through a provider such as Exotel keep numbers private but need a registered business and cost per call. Chat only is the cheapest start.
+3. Do you have a registered business entity? Cashfree already works, but MSG91 DLT registration and WhatsApp Business also need one.
