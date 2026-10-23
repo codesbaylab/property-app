@@ -283,6 +283,11 @@
   .pacts { display: flex; gap: 10px; position: sticky; bottom: 0; padding: 12px 0 calc(env(safe-area-inset-bottom) + 92px); background: var(--bg); box-shadow: 0 -10px 14px -8px var(--bg); }
   .pacts .btn:disabled { opacity: .6; }
 
+  /* ---- agent profile ---- */
+  .agh { display: flex; gap: 16px; align-items: center; margin: 6px 0 22px; } .agh .av { width: 72px; height: 72px; font-size: 28px; flex: none; }
+  .agl { grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr)); } .agl .pc { display: block; color: inherit; text-decoration: none; }
+  a.agent { color: inherit; text-decoration: none; }
+
   /* ---- agent application ---- */
   .agperks .li { cursor: default; } .agdl { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 14px 0 0; font-size: 14px; } .agdl dt { color: var(--muted); } .agdl dd { margin: 0; font-weight: 600; }
   .docs { display: grid; gap: 8px; } .doc { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg2); min-width: 0; }

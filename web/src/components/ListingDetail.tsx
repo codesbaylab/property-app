@@ -98,11 +98,15 @@ export default function ListingDetail({ listing: l, mode, saved, onToggleSave, o
               <h3>Highlights</h3>
               <div className="ams">{amenitiesOf(l).map(a => <span key={a}>{a}</span>)}</div>
               <h3>Listed by</h3>
-              <div className="agent">
-                <div className="av">{agentOf(l)[0]}</div>
-                <div style={{ flex: 1 }}><b>{agentOf(l)}</b><small>{l.agent ? (l.agent.verified ? "Verified agent" : "Owner") : "Listing agent"}</small></div>
-                {(l.agent?.verified ?? true) && <span className="tag ok" style={{ margin: 0 }}><Icon name="verified" /></span>}
-              </div>
+              {(() => {
+                const profile = l.agent?.verified && l.agent.id ? `/agent/${l.agent.id}` : null;
+                const body = (<>
+                  <div className="av">{agentOf(l)[0]}</div>
+                  <div style={{ flex: 1 }}><b>{agentOf(l)}</b><small>{l.agent ? (l.agent.verified ? (profile ? "Verified agent · View profile" : "Verified agent") : "Owner") : "Listing agent"}</small></div>
+                  {(l.agent?.verified ?? true) && <span className="tag ok" style={{ margin: 0 }}><Icon name="verified" /></span>}
+                </>);
+                return profile ? <a className="agent" href={profile}>{body}</a> : <div className="agent">{body}</div>;
+              })()}
             </>)}
             {onVisit && !signInRequired && <button className="btn ghost visitbtn" onClick={() => setVisiting(true)}><Icon name="clock" />Request a visit</button>}
             {report?.signedIn && <button className="reportlink" onClick={() => setReporting(true)}>Report this listing</button>}

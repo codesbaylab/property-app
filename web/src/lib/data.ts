@@ -54,7 +54,7 @@ export async function loadListings(view: Bounds, q: Query, onBatch: (ls: Listing
 interface DetailRow extends Omit<PinRow, "cover_path" | "is_verified"> {
   locality: string | null; city: string | null; description: string | null; amenities: string[] | null;
   floor: number | null; facing: string | null; is_verified: boolean; photos: string[];
-  agent: { name: string | null; verified: boolean } | null;
+  agent: { id?: string; name: string | null; verified: boolean } | null;
 }
 
 /** One listing with everything the property page needs. Works on the server and in the browser. */
@@ -71,7 +71,26 @@ export async function getListing(id: string): Promise<Listing | null> {
     addr: [r.address, r.locality].filter(Boolean).join(", "), img: photos[0] ?? `https://picsum.photos/seed/${r.id}/600/450`,
     full: true, verified: r.is_verified, description: r.description ?? undefined, amenities: r.amenities ?? undefined, photos: photos.length ? photos : undefined,
     facing: r.facing ?? undefined, floor: r.floor ?? undefined,
-    agent: r.agent?.name ? { name: r.agent.name, verified: r.agent.verified } : undefined,
+    agent: r.agent?.name ? { name: r.agent.name, verified: r.agent.verified, id: r.agent.id } : undefined,
+  };
+}
+
+export interface AgentProfile {
+  id: string; name: string; agency: string | null; city: string | null; since: string; liveCount: number;
+  listings: { id: string; mode: Mode; type: string; price: number; address: string; beds: number; baths: number; img: string }[];
+}
+
+/** A verified agent's public page, or null when the person is not a verified agent. */
+export async function getAgentProfile(id: string): Promise<AgentProfile | null> {
+  if (!usingDatabase || !/^[0-9a-f-]{36}$/i.test(id)) return null;
+  const { data, error } = await supabase().rpc("agent_profile", { p_id: id });
+  if (error || !data) return null;
+  const r = data as { id: string; name: string | null; agency: string | null; city: string | null; since: string; live_count: number | string;
+    listings: { id: string; mode: Mode; type: string; price: number | string; address: string; beds: number; baths: number; cover: string | null }[] };
+  return {
+    id: r.id, name: r.name || "Agent", agency: r.agency, city: r.city, since: r.since, liveCount: Number(r.live_count),
+    listings: r.listings.map(l => ({ id: l.id, mode: l.mode, type: LABEL[l.type] ?? "Apartment", price: Number(l.price), address: l.address, beds: l.beds, baths: l.baths,
+      img: l.cover ? photoUrl(l.cover) : `https://picsum.photos/seed/${l.id}/600/450` })),
   };
 }
 

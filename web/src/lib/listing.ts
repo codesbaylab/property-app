@@ -42,7 +42,7 @@ export interface Listing {
   photos?: string[];
   facing?: string;
   floor?: number;
-  agent?: { name: string; verified: boolean };
+  agent?: { name: string; verified: boolean; id?: string };
 }
 
 export const RANGE: Record<Mode, [number, number, number]> = {
