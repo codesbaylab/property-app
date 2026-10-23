@@ -23,6 +23,7 @@ export default function Leads({ onToast, onReply, onOpenVisits, visitTodo }: Pro
   const [totals, setTotals] = useState<{ live: number; views: number } | null>(null);
   const [stage, setStage] = useState<Stage>("new");
   const [error, setError] = useState("");
+  const [moving, setMoving] = useState("");
 
   const refresh = useCallback(async () => {
     try { setLeads(await loadLeads()); setError(""); } catch (e) { setError((e as Error).message); setLeads(l => l ?? []); }
@@ -38,9 +39,12 @@ export default function Leads({ onToast, onReply, onOpenVisits, visitTodo }: Pro
   }, [refresh]);
 
   const move = async (l: Lead, to: Stage) => {
+    if (moving) return;
+    setMoving(l.id);
     setLeads(cur => cur && cur.map(x => (x.id === l.id ? { ...x, stage: to } : x)));   // show it moving straight away
     const problem = await setLeadStage(l.id, to);
     if (problem) { onToast(problem); await refresh(); } else onToast(`Moved to ${STAGES.find(s => s.k === to)!.label}`);
+    setMoving("");
   };
 
   const count = (k: Stage) => (leads ?? []).filter(l => l.stage === k).length;
@@ -79,8 +83,8 @@ export default function Leads({ onToast, onReply, onOpenVisits, visitTodo }: Pro
               </div>
               {l.last && <p className="myl-note">{l.last.mine ? "You: " : ""}{l.last.body}</p>}
               <div className="myl-acts">
-                <button className="btn primary" onClick={() => onReply(l.id)}>Reply</button>
-                {STAGES.filter(s => s.k !== l.stage).map(s => <button key={s.k} className="btn ghost" onClick={() => move(l, s.k)}>{s.label}</button>)}
+                <button className="btn primary" disabled={moving === l.id} onClick={() => onReply(l.id)}>Reply</button>
+                {STAGES.filter(s => s.k !== l.stage).map(s => <button key={s.k} className="btn ghost" disabled={moving === l.id} onClick={() => move(l, s.k)}>{s.label}</button>)}
               </div>
             </article>
           ))}

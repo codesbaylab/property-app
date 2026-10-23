@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import ButtonFeedback from "@/components/ButtonFeedback";
 import NoPageZoom from "@/components/NoPageZoom";
 import "./globals.css";
 
@@ -29,7 +30,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
       <head><script dangerouslySetInnerHTML={{ __html: themeScript }} /></head>
-      <body><NoPageZoom />{children}</body>
+      <body><NoPageZoom /><ButtonFeedback />{children}</body>
     </html>
   );
 }

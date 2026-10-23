@@ -300,6 +300,16 @@
   .doc button { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; flex: none; } .doc button svg { width: 14px; height: 14px; color: var(--muted); }
   .docadd { display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; } .docadd svg { width: 18px; height: 18px; }
 
+  /* ---- press feedback ---- */
+  .btn, .adm-btn, .hbtn, .round, .chip, .typ, .vday, .li, .nav button, .seg button, .cnt button { transition: transform .12s ease, opacity .15s ease, background .15s ease; }
+  .btn:not(:disabled):active, .adm-btn:not(:disabled):active, .hbtn:active, .round:active, .chip:active, .typ:active, .vday:active, .nav button:active, .seg button:active, .cnt button:not(:disabled):active { transform: scale(.95); }
+  .li:active { background: var(--bg2); }
+  .pressed { opacity: .65; transform: scale(.96); }
+  fieldset.myl-acts { border: 0; padding: 0; min-width: 0; } fieldset.myl-acts:disabled .btn { opacity: .55; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .btn[aria-busy="true"]::after, .adm-btn[aria-busy="true"]::after { content: ""; display: inline-block; width: 13px; height: 13px; margin-left: 8px; vertical-align: -2px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; }
+  @media (prefers-reduced-motion: reduce) { .btn, .adm-btn, .hbtn, .round, .chip, .typ, .vday, .li, .nav button { transition: none; } .btn[aria-busy="true"]::after { animation-duration: 1.6s; } }
+
   /* ---- listing numbers ---- */
   .lstats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: 12px; }
   .lstats div { background: var(--bg2); border-radius: 12px; padding: 8px 4px; text-align: center; } .lstats b { display: block; font-size: 17px; } .lstats span { font-size: 11px; color: var(--muted); }
