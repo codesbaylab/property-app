@@ -1,15 +1,15 @@
 # Nestmap build plan
 
-Status: **for review, nothing built yet.** Date: 2026-10-19.
+Status: **phases 0 to 3 are built; phases 4 to 7 are not started.** Originally written 2026-10-19, updated 2026-10-23 to match the code. Section 4 has the current status of each phase, and the notes under it list where the build differs from this plan.
 
 ## 1. Decisions
 
 | # | Decision | Status |
 |---|---|---|
 | 1 | Owners **and** agents can post at launch | Confirmed |
-| 2 | Stack: Next.js, MapLibre, Supabase, **Cashfree** (payments), MSG91 (OTP) | Confirmed |
+| 2 | Stack: Next.js, MapLibre, Supabase, **Cashfree** (payments), MSG91 (OTP) | Confirmed. Next.js, MapLibre and Supabase are in use; Cashfree and MSG91 are not wired up yet |
 | 3 | First users come from Facebook ads | Confirmed (see section 6) |
-| 4 | Posting is free for now (owners: 3 live listings; agents: paid plan later) | Confirmed |
+| 4 | Posting is free for now (owners: 3 listings at a time; agents: paid plan later) | Confirmed, the 3-listing limit is enforced in the database |
 | 5 | Launch city is Kozhikode | Confirmed |
 | 6 | Payments through **Cashfree** (already have an account) | Confirmed |
 | 7 | Name "Nestmap" | **At risk: nestmap.in is already a live India property site. See section 8.** |
@@ -75,18 +75,31 @@ Postgres naming: snake_case, `uuid` keys, `timestamptz` times. Enums are shown i
 
 Each phase ends with something you can open and use.
 
-| Phase | What gets built | You can then |
+| Phase | What gets built | Status |
 |---|---|---|
-| **0. Setup** | Next.js project, Supabase project (Mumbai), environments, design tokens ported from the prototype, CI | See the empty app deployed |
-| **1. Map and listings (read)** | Tables, 300+ seed listings, MapLibre map, the left Buy/Rent control, filters, clusters, server-rendered detail pages, share links | Browse real data on the map, share a listing on WhatsApp |
-| **2. Accounts** | Phone OTP login, profile, Saved homes and searches, the nav pages | Sign in, save homes across devices |
-| **3. Posting and review** | Post flow with photo upload, drafts, My homes, edit, renewal and expiry, **admin review queue** (needed so posts can go live), rejected-listing feedback | Post a listing and approve it |
-| **4. Messages and visits** | Realtime chat, visit requests and calendar, notifications and push | Contact an owner and book a visit |
-| **5. Agents** | Verification, public agent profile, lead board, bulk CSV import, reviews, admin user and agent screens | Onboard agents, load listings in bulk |
-| **6. Money and support** | Cashfree boosts and Agent Pro, GST receipts, help and tickets, reports, announcements, compliance requests | Take payments, run support |
-| **7. Launch hardening** | Sentry, PostHog, rate limits, backups, legal pages and consent, PWA install checks, load test, Meta Pixel with consent | Go live in Kozhikode |
+| **0. Setup** | Next.js project, Supabase project (Mumbai), environments, design tokens ported from the prototype, CI | **Done**, except CI and a deployed copy (no pipeline or Vercel project yet) |
+| **1. Map and listings (read)** | Tables, 300+ seed listings, MapLibre map, the left Buy/Rent control, filters, clusters, server-rendered detail pages, share links | **Done.** About 360 sample listings around Kozhikode, price labels that switch with zoom, shareable `/home/[id]` pages. Place search uses the free OpenStreetMap Nominatim service and the map uses a free Esri demo basemap, both for demo use only. Not done: switching to MapTiler (set the style URLs in `.env.local`) |
+| **2. Accounts** | Phone OTP login, profile, Saved homes and searches, the nav pages | **Mostly done.** Sign in and sign up use **email and password**, not phone OTP (see notes). Saved homes are stored on the account and merged from the browser on first sign-in. Not done: saved searches, alerts |
+| **3. Posting and review** | Post flow with photo upload, drafts, My homes, edit, renewal and expiry, **admin review queue**, rejected-listing feedback | **Mostly done.** Post form with map pin and up to 8 photos, drafts, My homes with status and the team's feedback, send for review, withdraw, hide, mark sold or rented, delete, 3-listing limit, admin review queue. Not done: renewal and automatic expiry, editing a live listing (owners can only hide or close it), duplicate-photo checks. The posting migration (`20261026090000_posting.sql`) must be run with `npm run db:migrate` |
+| **4. Messages and visits** | Realtime chat, visit requests and calendar, notifications and push | **Not started.** The Inbox page says "coming soon" |
+| **5. Agents** | Verification, public agent profile, lead board, bulk CSV import, reviews, admin user and agent screens | **Barely started.** Admin can list users, suspend or ban them, and the profile shows a verified-agent badge. Not done: agent applications and document checks, agent profile pages, CSV import, reviews |
+| **6. Money and support** | Cashfree boosts and Agent Pro, GST receipts, help and tickets, reports, announcements, compliance requests | **Partly done.** Listing reports and the admin reports screen are built, with auto-hide after three reports. Not done: payments, support tickets, announcements, data requests |
+| **7. Launch hardening** | Sentry, PostHog, rate limits, backups, legal pages and consent, PWA install checks, load test, Meta Pixel with consent | **Barely started.** The app installs as a PWA and has a friendly not-found page. Not done: everything else in this phase |
+
+**Admin (planned across phases 3, 5 and 6) is built early.** `/admin` has a dashboard, review queue, listings, users, reports, and a team and activity log. Roles are enforced in the database: super admins can do everything, moderators can review listings, and support is read-only.
 
 Phases 1 to 3 are the first public version. Phases 4 and 5 are what make it worth returning to.
+
+### Where the build differs from the plan
+- **Sign-in is email and password**, not phone OTP. Phone login needs MSG91 and DLT registration, which have not been set up. The profile page says phone login is coming soon.
+- **Saved searches, notifications and push** are not built.
+- **Tables built so far:** profiles, admin_users, listings, listing_photos, saved_listings, reports and audit_log. The rest of section 3 is still to come, with later phases adding their own migrations.
+- **Column names differ slightly:** `listing_photos.sort_order` (plan: `position`), `listings.source` allows `manual`, `import` or `seed`, and `profiles` has no `email` column because email lives in Supabase Auth.
+- **Fields in section 3 not yet in the database:** `preferred_tenants`, `pets_allowed`, `renewed_at`, `import_batch_id`, and the agent profile columns.
+- **Storage:** the `listing-photos` bucket is public to read and writable only inside the owner's own folder, with a 5 MB limit and JPEG, PNG or WebP only. The `kyc-docs` bucket does not exist yet.
+- **Listing limit:** owners can have 3 listings at a time (drafts, in review, live, hidden or rejected). Verified agents and admins are exempt.
+- **Phone privacy:** phone numbers are not shown to the public or in listings. Only the admin Users screen shows them to the team.
+- **Sample data:** every account type has a demo login created by `npm run seed:users`, and the listings are sample data until real ones are posted.
 
 ## 5. Accounts and services to set up
 
