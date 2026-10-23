@@ -6,7 +6,7 @@ import { fmt, modeFor, priceFor, spec, type Listing, type Mode } from "@/lib/lis
 import type { ThemePref } from "@/lib/hooks";
 import type { Account } from "@/lib/auth";
 
-export type Page = "explore" | "saved" | "inbox" | "post" | "profile" | "visits" | "agent";
+export type Page = "explore" | "saved" | "inbox" | "post" | "profile" | "visits" | "agent" | "leads";
 
 function PropertyCard({ l, mode, saved, onToggle, onOpen }: { l: Listing; mode: Mode; saved: boolean; onToggle: (id: string) => void; onOpen: (id: string) => void }) {
   const m = modeFor(l, mode);
@@ -92,9 +92,11 @@ interface ProfileProps {
   onOpenVisits?: () => void; todo?: number;
   /** opens the agent application / status screen */
   onOpenAgent?: () => void;
+  /** opens the leads screen (shown to verified agents) */
+  onOpenLeads?: () => void;
 }
 
-export function ProfileView({ pref, onPref, onToast, account, canSignIn, signIn, signUp, signOut, onOpenVisits, todo = 0, onOpenAgent }: ProfileProps) {
+export function ProfileView({ pref, onPref, onToast, account, canSignIn, signIn, signUp, signOut, onOpenVisits, todo = 0, onOpenAgent, onOpenLeads }: ProfileProps) {
   const [mode, setMode] = useState<"in" | "up">("in");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -187,6 +189,11 @@ export function ProfileView({ pref, onPref, onToast, account, canSignIn, signIn,
           <div className="ic"><Icon name="moon" /></div><div className="tx"><b>Appearance</b></div>
           <div className="seg">{(["auto", "light", "dark"] as ThemePref[]).map(t => <button key={t} className={pref === t ? "on" : ""} onClick={() => onPref(t)}>{t[0].toUpperCase() + t.slice(1)}</button>)}</div>
         </div>
+        {account?.verifiedAgent && onOpenLeads && (
+          <button className="li" onClick={onOpenLeads}>
+            <div className="ic"><Icon name="chat" /></div><div className="tx"><b>Leads</b><small>Follow up with everyone who asked about your homes</small></div><Icon name="chevron" />
+          </button>
+        )}
         {account && onOpenVisits && (
           <button className="li" onClick={onOpenVisits}>
             <div className="ic"><Icon name="clock" /></div><div className="tx"><b>Visits</b><small>Homes you want to see, and requests for yours</small></div>
