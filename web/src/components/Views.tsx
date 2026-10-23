@@ -55,6 +55,7 @@ export function InboxView() {
   );
 }
 
+/** Shown instead of the posting flow when the app isn't connected to a database. */
 export function PostView() {
   const steps = [["1", "Add photos and details", "Price, size, rooms and a short description"], ["2", "Drop a pin on the map", "So people find the exact spot"], ["3", "We review, then it goes live", "Every listing is checked by our team first"]];
   return (
@@ -64,7 +65,7 @@ export function PostView() {
       <div className="hero">
         <h2>List your property in 3 minutes</h2>
         <p>Free for up to 3 listings. Our team reviews every listing before it goes live.</p>
-        <button className="btn" disabled>Posting opens soon</button>
+        <button className="btn" disabled>Posting needs a database</button>
       </div>
       <div className="steps">{steps.map(s => <div className="step" key={s[0]}><i>{s[0]}</i><div><b>{s[1]}</b><div className="meta">{s[2]}</div></div></div>)}</div>
       <div className="list">

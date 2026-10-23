@@ -13,6 +13,7 @@ import { getListing, isSampleId, loadListings, reportListing, usingDatabase } fr
 import { generateListing } from "@/lib/sample";
 
 const MapView = dynamic(() => import("./MapView"), { ssr: false });
+const PostFlow = dynamic(() => import("./PostFlow"), { ssr: false });
 
 type Sheet = null | "card" | "list" | "filter";
 const START: [number, number] = [75.7804, 11.2588]; // Kozhikode, until the browser tells us where the user is
@@ -198,7 +199,7 @@ export default function Explore() {
       <div className={`view${shownPage !== "explore" ? " open" : ""}`}>
         {shownPage === "saved" && <SavedView items={savedItems} mode={mode} savedIds={saved} onToggle={toggleSave} onOpen={setDetailId} />}
         {shownPage === "inbox" && <InboxView />}
-        {shownPage === "post" && <PostView />}
+        {shownPage === "post" && (account ? <PostFlow account={account} dark={dark} onToast={toast} onOpen={setDetailId} /> : <PostView />)}
         {shownPage === "profile" && <ProfileView pref={pref} onPref={setPref} onToast={toast} account={account} canSignIn={usingDatabase} signIn={signIn} signUp={signUp} signOut={signOut} />}
       </div>
 
