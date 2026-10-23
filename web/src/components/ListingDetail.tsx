@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Icon } from "./Icon";
+import { REPORT_REASONS } from "@/lib/data";
 import { aboutOf, agentOf, amenitiesOf, factsOf, fmt, modeFor, priceFor, type Listing, type Mode } from "@/lib/listing";
 
 export function Heart({ on, id, cls, onToggle }: { on: boolean; id: string; cls: string; onToggle: (id: string) => void }) {
@@ -27,12 +28,15 @@ interface Props {
   immediate?: boolean;
   /** the full record is still being fetched: show placeholders for description, highlights and agent */
   loading?: boolean;
+  /** lets signed-in people report the listing to the team (returns an error message or null) */
+  report?: { signedIn: boolean; send: (reason: string, details: string) => Promise<string | null> };
 }
 
 /** Full property screen. Used as an overlay on the map and as the shareable /home/<id> page. */
-export default function ListingDetail({ listing: l, mode, saved, onToggleSave, onClose, onToast, immediate, loading }: Props) {
+export default function ListingDetail({ listing: l, mode, saved, onToggleSave, onClose, onToast, immediate, loading, report }: Props) {
   const [shown, setShown] = useState(!!immediate);
   const [slide, setSlide] = useState(1);
+  const [reporting, setReporting] = useState(false);
   useEffect(() => {
     if (immediate) return;
     const f = requestAnimationFrame(() => setShown(true));
@@ -89,9 +93,11 @@ export default function ListingDetail({ listing: l, mode, saved, onToggleSave, o
                 <span className="tag ok" style={{ margin: 0 }}><Icon name="verified" /></span>
               </div>
             </>)}
+            {report && <button className="reportlink" onClick={() => (report.signedIn ? setReporting(true) : onToast("Sign in from your Profile to report a listing"))}>Report this listing</button>}
           </div>
         </div>
       </div>
+      {reporting && report && <ReportSheet onClose={() => setReporting(false)} send={report.send} onToast={onToast} />}
       <div className="dbar glass">
         <div className="in">
           <div><div className="dp">{price}{m === "rent" && <small style={{ fontWeight: 500, color: "var(--muted)" }}> /mo</small>}</div><div className="dm">Verified agent · replies in ~1 hr</div></div>
@@ -100,5 +106,33 @@ export default function ListingDetail({ listing: l, mode, saved, onToggleSave, o
         </div>
       </div>
     </>
+  );
+}
+
+function ReportSheet({ onClose, send, onToast }: { onClose: () => void; send: (reason: string, details: string) => Promise<string | null>; onToast: (m: string) => void }) {
+  const [reason, setReason] = useState<string>(REPORT_REASONS[0]);
+  const [details, setDetails] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const submit = async () => {
+    setBusy(true); setError("");
+    const problem = await send(reason, details);
+    setBusy(false);
+    if (problem) setError(problem); else { onToast("Thanks. Our team will take a look."); onClose(); }
+  };
+  return (
+    <div className="rscrim" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="rsheet" role="dialog" aria-modal="true" aria-label="Report this listing">
+        <div className="sh"><h2>Report this listing</h2><button className="x" onClick={onClose} aria-label="Close"><Icon name="x" /></button></div>
+        <div role="radiogroup" aria-label="Reason">
+          {REPORT_REASONS.map(r => (
+            <label key={r} className={`ropt${reason === r ? " on" : ""}`}><input type="radio" name="reason" checked={reason === r} onChange={() => setReason(r)} />{r}</label>
+          ))}
+        </div>
+        <textarea className="rtext" rows={3} maxLength={1000} placeholder="Anything else we should know? (optional)" aria-label="Details" value={details} onChange={e => setDetails(e.target.value)} />
+        {error && <div className="rerr" role="alert">{error}</div>}
+        <div className="cta"><button className="btn ghost" onClick={onClose}>Cancel</button><button className="btn primary" disabled={busy} onClick={submit}>{busy ? "Sending…" : "Send report"}</button></div>
+      </div>
+    </div>
   );
 }

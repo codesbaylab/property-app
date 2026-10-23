@@ -9,7 +9,7 @@ import type { FlyTo, View } from "./MapView";
 import { useAuth } from "@/lib/auth";
 import { useSaved, useTheme, useToast } from "@/lib/hooks";
 import { PT, RANGE, RES, fmt, inBounds, modeFor, priceFor, spec, type Listing, type Mode, type PType } from "@/lib/listing";
-import { getListing, isSampleId, loadListings, usingDatabase } from "@/lib/data";
+import { getListing, isSampleId, loadListings, reportListing, usingDatabase } from "@/lib/data";
 import { generateListing } from "@/lib/sample";
 
 const MapView = dynamic(() => import("./MapView"), { ssr: false });
@@ -230,6 +230,7 @@ export default function Explore() {
       {detail && (
         <ListingDetail key={detail.id} listing={detail} mode={mode} saved={saved.has(detail.id)}
           loading={!isSampleId(detail.id) && !detail.full}
+          report={usingDatabase && !isSampleId(detail.id) ? { signedIn: !!account, send: (reason, details) => (account ? reportListing(account.id, detail.id, reason, details) : Promise.resolve("Sign in first.")) } : undefined}
           onToggleSave={toggle} onClose={() => setDetailId(null)} onToast={toast} />
       )}
       <Toast msg={toastMsg} on={toastOn} />

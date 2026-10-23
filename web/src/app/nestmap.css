@@ -33,7 +33,7 @@
   .top { position: fixed; z-index: 500; top: calc(env(safe-area-inset-top) + 12px); left: 12px; right: 12px; display: flex; gap: 10px; max-width: 540px; }
   .search { flex: 1; display: flex; align-items: center; gap: 10px; height: 52px; padding: 0 18px; border-radius: 999px; box-shadow: var(--shadow-m); }
   .search svg { width: 20px; height: 20px; color: var(--muted); }
-  .search input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; font: inherit; color: var(--fg); font-size: 15px; }
+  .search input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; font: inherit; color: var(--fg); font-size: 16px; }
   .search input::placeholder { color: var(--muted); }
   .fbtn { position: relative; width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; box-shadow: var(--shadow-m); }
   .fbtn svg { width: 21px; height: 21px; }
@@ -214,3 +214,17 @@
 
   .login .stack { display: grid; gap: 10px; margin-top: 14px; } .login .stack .btn { width: 100%; } .login .stack .btn:disabled { opacity: .6; }
   .login .err { color: var(--danger); font-size: 13.5px; font-weight: 500; }
+
+  .reportlink { display: block; margin: 26px auto 0; padding: 8px 14px; color: var(--muted); font-size: 13px; font-weight: 550; text-decoration: underline; text-underline-offset: 3px; }
+  .rscrim { position: fixed; inset: 0; z-index: 950; background: rgba(8,12,20,.45); display: flex; align-items: flex-end; justify-content: center; }
+  .rsheet { background: var(--bg); width: 100%; max-width: 520px; border-radius: 26px 26px 0 0; padding: 18px 18px max(18px, env(safe-area-inset-bottom)); box-shadow: var(--shadow-m); animation: rise .22s ease; }
+  .ropt { display: flex; align-items: center; gap: 12px; padding: 12px 4px; border-top: 1px solid var(--line); font-weight: 550; cursor: pointer; } .ropt:first-child { border-top: 0; }
+  .ropt input { accent-color: var(--accent); width: 18px; height: 18px; } .ropt.on { color: var(--accent); }
+  .rtext { width: 100%; margin-top: 10px; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--bg2); color: var(--fg); font: inherit; outline: none; resize: vertical; }
+  .rtext:focus { border-color: var(--accent); } .rerr { color: var(--danger); font-size: 13.5px; margin-top: 8px; }
+  @media (min-width: 900px) { .rscrim { align-items: center; } .rsheet { border-radius: 26px; } }
+
+  /* phones zoom the whole page when a text box is smaller than 16px: keep every field at 16px and stop double-tap zoom */
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-action: manipulation; }
+  body { overscroll-behavior: none; }
+  @media (pointer: coarse) { input, select, textarea { font-size: 16px !important; } }

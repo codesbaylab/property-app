@@ -18,7 +18,7 @@ const LABEL = Object.fromEntries(Object.entries(DB_TYPE).map(([label, db]) => [d
 export const isSampleId = (id: string) => /^c-?\d+_-?\d+_\d+$/.test(id);
 
 /** Photos are stored either as full links (seed data) or as a path inside the listing-photos storage bucket. */
-const photoUrl = (path: string) => (/^https?:\/\//.test(path) ? path : `${supabaseUrl}/storage/v1/object/public/listing-photos/${path}`);
+export const photoUrl = (path: string) => (/^https?:\/\//.test(path) ? path : `${supabaseUrl}/storage/v1/object/public/listing-photos/${path}`);
 
 /** A stable number from the id, used to vary generated wording. */
 const hashOf = (id: string) => { let h = 0; for (const c of id) h = (h * 31 + c.charCodeAt(0)) | 0; return Math.abs(h) % 1000; };
@@ -72,4 +72,14 @@ export async function getListing(id: string): Promise<Listing | null> {
     facing: r.facing ?? undefined, floor: r.floor ?? undefined,
     agent: r.agent?.name ? { name: r.agent.name, verified: r.agent.verified } : undefined,
   };
+}
+
+const REPORT_REASONS = ["Already sold or rented", "Photos don't match", "Wrong price or location", "Duplicate listing", "Scam or suspicious"] as const;
+export { REPORT_REASONS };
+
+/** A signed-in user reports a listing. Returns an error message, or null when it was sent. */
+export async function reportListing(userId: string, listingId: string, reason: string, details: string): Promise<string | null> {
+  const { error } = await supabase().from("reports").insert({ reporter_id: userId, target_type: "listing", target_id: listingId, reason, details: details.trim() || null });
+  if (!error) return null;
+  return error.code === "23505" ? "You have already reported this listing." : "Could not send the report. Please try again.";
 }
