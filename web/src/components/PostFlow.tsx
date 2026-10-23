@@ -191,7 +191,7 @@ function ListingForm({ account, dark, initial, onToast, onDone, onCancel }: Form
             <button type="button" role="tab" aria-selected={f.mode === "rent"} className={f.mode === "rent" ? "on" : ""} onClick={() => setMode("rent")}>For rent</button>
             <button type="button" role="tab" aria-selected={f.mode === "buy"} className={f.mode === "buy" ? "on" : ""} onClick={() => setMode("buy")}>For sale</button>
           </div>
-          <div className="types">
+          <div className="ptypes">
             {typesFor(f.mode).map(k => (
               <button type="button" key={k} className={`typ${f.type === k ? " on" : ""}`} aria-pressed={f.type === k} onClick={() => set("type", k)}><Icon name={typeIcon(k)} />{k}</button>
             ))}
@@ -218,7 +218,7 @@ function ListingForm({ account, dark, initial, onToast, onDone, onCancel }: Form
           </div>
           <Field label="Description" hint="What makes it a good home? Nearby places, condition, who it suits."><textarea rows={4} maxLength={1500} value={f.description} onChange={e => set("description", e.target.value)} /></Field>
           <div className="ff"><span>Amenities</span>
-            <div className="chips">{AMENITIES.map(a => <button type="button" key={a} className={`chip${f.amenities.includes(a) ? " on" : ""}`} aria-pressed={f.amenities.includes(a)} onClick={() => toggleAmenity(a)}>{a}</button>)}</div>
+            <div className="achips">{AMENITIES.map(a => <button type="button" key={a} className={`achip${f.amenities.includes(a) ? " on" : ""}`} aria-pressed={f.amenities.includes(a)} onClick={() => toggleAmenity(a)}>{a}</button>)}</div>
           </div>
         </section>
 
