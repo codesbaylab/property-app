@@ -12,6 +12,7 @@ import {
 } from "@/lib/posting";
 
 const PinPicker = dynamic(() => import("./PinPicker"), { ssr: false });
+const ImportListings = dynamic(() => import("./ImportListings"), { ssr: false });
 
 const START: [number, number] = [75.7804, 11.2588];   // Kozhikode
 
@@ -38,7 +39,7 @@ interface Props {
 
 export default function PostFlow({ account, dark, onToast, onOpen, onChanged, onOpenVisits, visitTodo = 0 }: Props) {
   const [mine, setMine] = useState<MyListing[] | null>(null);
-  const [editing, setEditing] = useState<MyListing | "new" | null>(null);
+  const [editing, setEditing] = useState<MyListing | "new" | "import" | null>(null);
   const [loadError, setLoadError] = useState("");
   const [stats, setStats] = useState<Record<string, ListingStats>>({});
 
@@ -48,6 +49,9 @@ export default function PostFlow({ account, dark, onToast, onOpen, onChanged, on
   }, []);
   useEffect(() => { const t = setTimeout(refresh, 0); return () => clearTimeout(t); }, [refresh]);
 
+  if (editing === "import") {
+    return <ImportListings account={account} onBack={() => setEditing(null)} onToast={onToast} onDone={async () => { setEditing(null); await refresh(); onChanged?.(); }} />;
+  }
   if (editing) {
     return (
       <ListingForm
@@ -82,6 +86,7 @@ export default function PostFlow({ account, dark, onToast, onOpen, onChanged, on
         <h2>List your property in 3 minutes</h2>
         <p>Free for up to 3 listings. Our team reviews every listing before it goes live.</p>
         <button className="btn" onClick={() => setEditing("new")}>Post a property</button>
+        {account.verifiedAgent && <button className="btn ghost" style={{ marginLeft: 8 }} onClick={() => setEditing("import")}>Import from spreadsheet</button>}
       </div>
       {onOpenVisits && <button className="li visitlink" onClick={onOpenVisits}><div className="ic"><Icon name="clock" /></div><div className="tx"><b>Visit requests</b><small>People who want to see your homes</small></div>{visitTodo > 0 && <i className="bdg inline">{visitTodo}</i>}<Icon name="chevron" /></button>}
       {loadError && <div className="err" role="alert" style={{ marginBottom: 12 }}>{loadError}</div>}
