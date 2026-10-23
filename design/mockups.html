@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nestmap Design Board</title>
+<style>
+  :root { --bg:#fff; --fg:#14161a; --muted:#6b7280; --line:#e5e7eb; --accent:#0f766e; --soft:#f3f4f6; --shadow:0 6px 24px rgba(0,0,0,.14); }
+  * { box-sizing: border-box; margin: 0; }
+  body { font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--fg); background: #e9ecef; padding: 32px 24px 64px; }
+  h1 { font-size: 26px; letter-spacing: -.01em; } .sub { color: var(--muted); margin: 4px 0 28px; }
+  .board { display: grid; grid-template-columns: repeat(auto-fill, 316px); gap: 36px 28px; justify-content: center; }
+  .cap { text-align: center; margin-bottom: 10px; font-weight: 700; } .cap small { display: block; font-weight: 400; color: var(--muted); }
+  .phone { width: 316px; height: 640px; border: 8px solid #14161a; border-radius: 40px; overflow: hidden; position: relative; background: var(--bg); }
+  .phone > * { position: absolute; }
+  .fill { inset: 0; }
+  .scroll { inset: 0; overflow: hidden; }
+
+  /* faux map */
+  .map { inset: 0; background:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='316' height='640'><rect width='316' height='640' fill='%23f1ece0'/><path d='M0 0h110c-20 120 30 200 10 320s-40 220-20 320H0z' fill='%23bcd9f2'/><g fill='none' stroke='%23fff' stroke-width='7'><path d='M130 0c20 140 90 200 70 330s-10 200 60 310'/><path d='M100 220h216'/><path d='M150 420c80-30 120-20 166 10'/></g><g fill='none' stroke='%23f6c9a0' stroke-width='3'><path d='M180 0c10 90 70 150 136 170'/><path d='M120 520h196'/></g><path d='M230 60l60 40-20 60-50-20z' fill='%23cfe5c4'/></svg>") center/cover; }
+  .dim { inset: 0; background: rgba(0,0,0,.32); }
+
+  /* shared pieces */
+  .search { left: 12px; right: 12px; top: 44px; height: 46px; background: #fff; border-radius: 999px; box-shadow: var(--shadow); display: flex; align-items: center; padding: 0 16px; color: var(--muted); gap: 8px; }
+  .fb { top: 44px; right: 12px; width: 46px; height: 46px; border-radius: 50%; background: #fff; box-shadow: var(--shadow); display: grid; place-items: center; }
+  .search.w { right: 66px; }
+  .seg { display: flex; background: #fff; border-radius: 999px; padding: 3px; box-shadow: var(--shadow); font-weight: 600; font-size: 12px; }
+  .seg b { padding: 5px 14px; border-radius: 999px; color: var(--muted); font-weight: 600; } .seg b.on { background: var(--accent); color: #fff; }
+  .status { top: 0; left: 0; right: 0; height: 34px; display: flex; justify-content: space-between; padding: 12px 22px 0; font-size: 11px; font-weight: 700; }
+  .tabbar { left: 12px; right: 12px; bottom: 12px; background: rgba(255,255,255,.88); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border: 1px solid var(--line); border-radius: 26px; box-shadow: 0 6px 24px rgba(15,23,42,.14); display: flex; align-items: center; padding: 5px 6px; font-size: 10px; color: var(--muted); }
+  .tabbar div { flex: 1; text-align: center; padding: 4px 0; font-weight: 600; } .tabbar div.on { color: var(--accent); } .tabbar i { display: block; font-style: normal; font-size: 18px; line-height: 22px; }
+  .tabbar div.fab { flex: 0 0 46px; height: 46px; border-radius: 16px; background: var(--accent); color: #fff; display: grid; place-items: center; padding: 0; box-shadow: 0 4px 12px rgba(13,148,136,.45); } .tabbar div.fab i { font-size: 22px; line-height: 1; }
+  .lm { width: 98px; background: rgba(255,255,255,.88); backdrop-filter: blur(14px); border: 1px solid var(--line); border-radius: 22px; padding: 4px; box-shadow: 0 6px 24px rgba(15,23,42,.14); font-size: 12.5px; font-weight: 600; color: var(--muted); }
+  .lm div { padding: 8px 12px; border-radius: 18px; line-height: 1.2; } .lm div.on { background: var(--accent); color: #fff; box-shadow: 0 3px 10px rgba(13,148,136,.4); } .lm small { display: block; font-size: 10px; font-weight: 500; opacity: .85; }
+  .lmf { width: 150px; background: rgba(255,255,255,.92); backdrop-filter: blur(14px); border: 1px solid var(--line); border-radius: 18px; padding: 5px; box-shadow: 0 6px 24px rgba(15,23,42,.14); font-size: 12.5px; font-weight: 600; }
+  .lmf div { padding: 8px 10px; border-radius: 12px; } .lmf div.on { color: var(--accent); background: #e6f4f2; } .lmf div.all { color: var(--muted); }
+  .pin { position: relative; background: #fff; padding: 4px 9px; border-radius: 999px; font-size: 11px; font-weight: 650; box-shadow: 0 1px 2px rgba(15,23,42,.16), 0 4px 12px rgba(15,23,42,.12); border: 1px solid rgba(15,23,42,.07); white-space: nowrap; }
+  .pin::after { content: ''; position: absolute; left: 50%; bottom: -4px; width: 7px; height: 7px; background: inherit; border-right: 1px solid rgba(15,23,42,.07); border-bottom: 1px solid rgba(15,23,42,.07); transform: translateX(-50%) rotate(45deg); }
+  .pin.sel { background: #14161a; color: #fff; transform: scale(1.1); }
+  .dot { width: 11px; height: 11px; border-radius: 50%; background: var(--accent); border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.3); }
+  .pill { background: #14161a; color: #fff; font-weight: 600; padding: 10px 18px; border-radius: 999px; box-shadow: var(--shadow); font-size: 13px; }
+  .circle { width: 42px; height: 42px; border-radius: 50%; background: #fff; box-shadow: var(--shadow); display: grid; place-items: center; }
+  .nav { left: 0; right: 0; bottom: 0; height: 64px; background: #fff; border-top: 1px solid var(--line); display: flex; justify-content: space-around; padding-top: 8px; font-size: 10px; color: var(--muted); }
+  .nav div { text-align: center; } .nav div.on { color: var(--accent); font-weight: 700; } .nav i { display: block; font-style: normal; font-size: 18px; line-height: 22px; }
+  .sheet { left: 0; right: 0; bottom: 0; background: #fff; border-radius: 22px 22px 0 0; padding: 8px 16px 18px; box-shadow: var(--shadow); }
+  .grab { width: 38px; height: 4px; background: var(--line); border-radius: 2px; margin: 0 auto 12px; }
+  .ph { background: linear-gradient(135deg,#cbd5e1,#e2e8f0); border-radius: 14px; background-size: cover; background-position: center; }
+  .btn { padding: 12px; border-radius: 12px; font-weight: 700; text-align: center; flex: 1; font-size: 13px; }
+  .btn.p { background: var(--accent); color: #fff; } .btn.g { border: 1px solid var(--line); }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .chip { border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; font-size: 12px; } .chip.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .muted { color: var(--muted); } .big { font-size: 22px; font-weight: 800; letter-spacing: -.01em; }
+  .title { font-size: 18px; font-weight: 800; }
+  .field { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-top: 10px; } .field small { display: block; color: var(--muted); font-size: 11px; }
+  .item { display: flex; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); } .item .ph { width: 76px; height: 58px; border-radius: 10px; flex: none; }
+  .track { height: 4px; background: var(--line); border-radius: 2px; margin: 12px 0 4px; position: relative; } .track i { position: absolute; left: 0; width: 62%; height: 4px; background: var(--accent); border-radius: 2px; } .track u { position: absolute; left: 62%; top: -6px; width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 2px solid var(--accent); }
+  .tag { display: inline-block; font-size: 11px; font-weight: 700; color: var(--accent); background: #e3f2f0; padding: 2px 9px; border-radius: 999px; }
+  .facts { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 12px 0; } .facts div { border: 1px solid var(--line); border-radius: 12px; padding: 8px; text-align: center; font-size: 11px; color: var(--muted); } .facts b { display: block; font-size: 15px; color: var(--fg); }
+  .heart { color: #e11d48; }
+  .sw { display: flex; justify-content: space-between; padding: 12px 0; border-top: 1px solid var(--line); }
+  .tog { width: 36px; height: 20px; border-radius: 999px; background: var(--accent); position: relative; } .tog::after { content:""; position:absolute; right:2px; top:2px; width:16px; height:16px; background:#fff; border-radius:50%; }
+
+/* ---- extra app screens ---- */
+#more h2 { font-size: 20px; margin: 48px 0 4px; } #more .desc { color: var(--muted); margin-bottom: 16px; max-width: 780px; }
+#more { --ok:#15803d; --warn:#b45309; --bad:#b91c1c; }
+#more .sub { color: var(--muted); margin: 4px 0 8px; }
+#more h2 { font-size: 20px; margin: 48px 0 4px; }
+#more .desc { color: var(--muted); margin-bottom: 16px; max-width: 780px; }
+#more .grid { display: flex; flex-wrap: wrap; gap: 28px; }
+#more .cap { text-align: center; margin-bottom: 8px; font-weight: 700; }
+#more .cap small { display: block; font-weight: 400; color: var(--muted); }
+#more .phone { width: 316px; height: 640px; border: 8px solid #14161a; border-radius: 40px; overflow: hidden; position: relative; background: #fff; flex: none; }
+#more .phone > * { position: absolute; }
+#more .fill { inset: 0; }
+#more .sc { left: 0; right: 0; top: 44px; bottom: 64px; overflow: hidden; padding: 6px 16px; }
+#more .status { top: 0; left: 0; right: 0; height: 34px; display: flex; justify-content: space-between; padding: 12px 22px 0; font-size: 11px; font-weight: 700; z-index: 2; }
+#more .map { inset: 0; background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='316' height='640'><rect width='316' height='640' fill='%23f1ece0'/><path d='M0 0h110c-20 120 30 200 10 320s-40 220-20 320H0z' fill='%23bcd9f2'/><g fill='none' stroke='%23fff' stroke-width='7'><path d='M130 0c20 140 90 200 70 330s-10 200 60 310'/><path d='M100 220h216'/></g></svg>") center/cover; }
+#more .map.sat { background: linear-gradient(135deg,#3b5d3a,#52704a 40%,#6b8a5e 60%,#2f4f6b 85%); }
+#more .dim { inset: 0; background: rgba(0,0,0,.4); }
+#more .search { left: 12px; right: 12px; top: 44px; height: 46px; background: #fff; border-radius: 999px; box-shadow: var(--shadow); display: flex; align-items: center; padding: 0 16px; color: var(--muted); }
+#more .clu { width: 38px; height: 38px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 800; display: grid; place-items: center; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
+#more .circle { width: 42px; height: 42px; border-radius: 50%; background: #fff; box-shadow: var(--shadow); display: grid; place-items: center; }
+#more .nav { left: 0; right: 0; bottom: 0; height: 64px; background: #fff; border-top: 1px solid var(--line); display: flex; justify-content: space-around; padding-top: 8px; font-size: 10px; color: var(--muted); }
+#more .nav div { text-align: center; }
+#more .nav div.on { color: var(--accent); font-weight: 700; }
+#more .nav i { display: block; font-style: normal; font-size: 18px; line-height: 22px; }
+#more .sheet { left: 0; right: 0; bottom: 0; background: #fff; border-radius: 22px 22px 0 0; padding: 8px 18px 22px; box-shadow: var(--shadow); }
+#more .grab { width: 38px; height: 4px; background: var(--line); border-radius: 2px; margin: 0 auto 14px; }
+#more .title { font-size: 19px; font-weight: 800; letter-spacing: -.01em; }
+#more .big { font-size: 24px; font-weight: 800; letter-spacing: -.01em; }
+#more .muted { color: var(--muted); }
+#more .small { font-size: 12px; }
+#more .btn { padding: 12px; border-radius: 12px; font-weight: 700; text-align: center; font-size: 13px; display: block; }
+#more .btn.p { background: var(--accent); color: #fff; }
+#more .btn.g { border: 1px solid var(--line); }
+#more .btn.d { background: #14161a; color: #fff; }
+#more .btn.r { border: 1px solid #fecaca; color: var(--bad); }
+#more .row { display: flex; gap: 8px; align-items: center; }
+#more .sp { justify-content: space-between; }
+#more .c { text-align: center; }
+#more .card { border: 1px solid var(--line); border-radius: 14px; padding: 12px; margin-top: 10px; background: #fff; }
+#more .ph { background: #cbd5e1 center/cover; border-radius: 10px; flex: none; }
+#more .st { font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; display: inline-block; }
+#more .st.ok { background: #dcfce7; color: var(--ok); }
+#more .st.wr { background: #fef3c7; color: var(--warn); }
+#more .st.bd { background: #fee2e2; color: var(--bad); }
+#more .st.gr { background: #e5e7eb; color: #374151; }
+#more .st.bl { background: #dbeafe; color: #1d4ed8; }
+#more .chip { border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; font-size: 12px; display: inline-block; margin: 0 4px 4px 0; }
+#more .chip.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+#more .field { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-top: 10px; }
+#more .field small { display: block; color: var(--muted); font-size: 11px; }
+#more .facts { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 10px 0; }
+#more .facts div { border: 1px solid var(--line); border-radius: 12px; padding: 8px; text-align: center; font-size: 11px; color: var(--muted); }
+#more .facts b { display: block; font-size: 15px; color: var(--fg); }
+#more .kv { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; font-size: 12px; }
+#more .kv span { color: var(--muted); display: block; font-size: 11px; }
+#more .bars { display: flex; align-items: flex-end; gap: 5px; height: 70px; margin-top: 8px; }
+#more .bars i { flex: 1; background: #99d5cd; border-radius: 3px 3px 0 0; }
+#more .bars i.hi { background: var(--accent); }
+#more .av { width: 40px; height: 40px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-weight: 800; flex: none; }
+#more .tog { width: 36px; height: 20px; border-radius: 999px; background: var(--accent); position: relative; display: inline-block; flex: none; }
+#more .tog::after { content:""; position:absolute; right:2px; top:2px; width:16px; height:16px; background:#fff; border-radius:50%; }
+#more .tog.off { background: #d1d5db; }
+#more .tog.off::after { right: auto; left: 2px; }
+#more .sk { background: linear-gradient(90deg,#eceff3,#f7f8fa,#eceff3); border-radius: 8px; }
+#more .big-ico { width: 96px; height: 96px; border-radius: 50%; background: var(--soft); display: grid; place-items: center; font-size: 40px; margin: 0 auto 14px; }
+#more .step { display: flex; gap: 4px; margin: 8px 0 14px; }
+#more .step i { flex: 1; height: 4px; border-radius: 2px; background: var(--line); }
+#more .step i.on { background: var(--accent); }
+#more .notif { display: flex; gap: 10px; padding: 12px 0; border-top: 1px solid var(--line); }
+#more .notif .ic { width: 36px; height: 36px; border-radius: 50%; background: #e3f2f0; display: grid; place-items: center; flex: none; }
+#more .notif.un { background: #f7fbfa; margin: 0 -16px; padding: 12px 16px; }
+#more .radio { display: flex; gap: 10px; align-items: center; padding: 11px 0; border-top: 1px solid var(--line); }
+#more .radio i { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #cbd5e1; flex: none; }
+#more .radio.on i { border-color: var(--accent); background: radial-gradient(var(--accent) 45%, #fff 50%); }
+#more .day { display: grid; grid-template-columns: repeat(5,1fr); gap: 6px; }
+#more .day div { border: 1px solid var(--line); border-radius: 12px; padding: 8px 0; text-align: center; font-size: 11px; color: var(--muted); }
+#more .day b { display: block; font-size: 16px; color: var(--fg); }
+#more .day .on { background: var(--accent); color: #fff; border-color: var(--accent); }
+#more .day .on b { color: #fff; }
+#more .slots { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; margin-top: 8px; }
+#more .slots div { border: 1px solid var(--line); border-radius: 10px; padding: 8px 0; text-align: center; font-size: 12px; }
+#more .slots .on { border-color: var(--accent); background: #e3f2f0; color: var(--accent); font-weight: 700; }
+#more .cmp { display: grid; grid-template-columns: 70px 1fr 1fr 1fr; font-size: 11px; }
+#more .cmp > div { padding: 7px 4px; border-top: 1px solid var(--line); text-align: center; }
+#more .cmp > div:nth-child(4n+1) { text-align: left; color: var(--muted); }
+#more .cmp .best { color: var(--ok); font-weight: 800; }
+#more .nb { display: flex; justify-content: space-between; padding: 7px 0; border-top: 1px solid var(--line); font-size: 12px; }
+#more .browser { width: 1040px; max-width: 100%; border-radius: 12px; border: 1px solid #cfd4da; background: #fff; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,.08); flex: none; }
+#more .url { background: #eef0f3; padding: 8px 14px; display: flex; gap: 8px; align-items: center; }
+#more .url i { width: 10px; height: 10px; border-radius: 50%; background: #cbd0d6; }
+#more .url span { flex: 1; background: #fff; border-radius: 6px; padding: 3px 12px; color: var(--muted); font-size: 12px; }
+#more .top { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; border-bottom: 1px solid var(--line); }
+#more .top b { font-size: 17px; font-weight: 800; }
+#more .top b i { color: var(--accent); font-style: normal; }
+#more .split { display: flex; height: 440px; }
+#more .split .l { width: 360px; overflow: hidden; padding: 14px; border-right: 1px solid var(--line); }
+#more .split .m { flex: 1; position: relative; }
+#more .split .m .map { position: absolute; inset: 0; }
+#more .li { display: flex; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); }
+#more .og { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; width: 300px; }
+#more .og .ph { border-radius: 0; height: 130px; width: 100%; }
+#more .og div { padding: 10px 12px; }
+#more .win { width: 1040px; max-width: 100%; height: 420px; border-radius: 12px; border: 1px solid #cfd4da; background: #fff; overflow: hidden; display: flex; box-shadow: 0 10px 30px rgba(0,0,0,.08); font-size: 13px; flex: none; }
+#more .side { width: 190px; background: #14161a; color: #cbd5e1; padding: 14px 10px; flex: none; }
+#more .side .logo { color: #fff; font-weight: 800; padding: 2px 10px 12px; }
+#more .side .logo i { color: #2dd4bf; font-style: normal; }
+#more .side a { padding: 6px 10px; border-radius: 8px; display: block; }
+#more .side a.on { background: #24282f; color: #fff; }
+#more .side .g { font-size: 10px; letter-spacing: .08em; color: #6b7280; padding: 10px 10px 3px; }
+#more .main { flex: 1; background: var(--soft); padding: 16px 18px; overflow: hidden; }
+#more .main h3 { margin-bottom: 10px; font-size: 16px; }
+#more .t2 { background: #fff; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+#more table { width: 100%; border-collapse: collapse; }
+#more th, #more td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+#more th { font-size: 11px; color: var(--muted); font-weight: 600; }
+#more tr:last-child td { border: 0; }
+#more .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+#more .three { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+#more .k { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+#more .k small { color: var(--muted); display: block; }
+#more .k b { font-size: 22px; }
+#more .a-btn { background: var(--accent); color: #fff; border-radius: 8px; padding: 6px 14px; font-weight: 700; display: inline-block; }
+#more .a-btn.g { background: #fff; color: var(--fg); border: 1px solid var(--line); }
+#more .inp { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; color: var(--muted); margin-bottom: 8px; }
+#more .brand { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; max-width: 1040px; }
+#more .brand .card { margin: 0; }
+#more .swt { display: flex; gap: 8px; margin-top: 8px; }
+#more .swt i { flex: 1; height: 46px; border-radius: 10px; }
+
+#more .tablet { width: 860px; height: 560px; border: 10px solid #14161a; border-radius: 28px; overflow: hidden; position: relative; background: #fff; display: flex; flex: none; }
+#more .rail { width: 64px; background: #fff; border-right: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; gap: 18px; padding-top: 18px; font-size: 10px; color: var(--muted); flex: none; }
+#more .rail div { text-align: center; } #more .rail i { display: block; font-style: normal; font-size: 20px; } #more .rail .on { color: var(--accent); font-weight: 700; }
+#more .pane { width: 300px; border-right: 1px solid var(--line); padding: 14px; overflow: hidden; flex: none; }
+#more .mapw { flex: 1; position: relative; overflow: hidden; } #more .mapw .map { position: absolute; inset: 0; } #more .mapw .pin, #more .mapw .clu { position: absolute; }
+#more .side-panel { position: absolute; right: 0; top: 0; bottom: 0; width: 320px; background: #fff; box-shadow: -8px 0 24px rgba(0,0,0,.12); padding: 14px; overflow: hidden; }
+#more .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; } #more .bpgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; max-width: 1040px; }
+#more .bub { max-width: 78%; padding: 8px 12px; border-radius: 14px; margin-top: 8px; font-size: 13px; background: var(--soft); } #more .bub.me { margin-left: auto; background: var(--accent); color: #fff; }
+#more .stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-top: 10px; } #more .stats div { background: var(--soft); border-radius: 12px; padding: 10px 6px; text-align: center; font-size: 11px; color: var(--muted); } #more .stats b { display: block; font-size: 18px; color: var(--fg); }
+</style>
+</head>
+<body>
+<h1>Nestmap — design board</h1>
+<p class="sub">Map-first property search. One search bar, one filter, everything else is one tap away. Teal accent, white surfaces, quiet pins.</p>
+
+<div class="board">
+
+<!-- 1 Map home -->
+<div><div class="cap">1 · Map home<small>Buy / Rent on the left, sub-types open beside it</small></div>
+<div class="phone"><div class="map"></div>
+  <div class="status"><span>9:41</span><span>●●● 5G</span></div>
+  <div class="search w">🔍&nbsp;Search area or city</div><div class="fb">⚙</div>
+  <div class="lm" style="left:12px;top:98px"><div class="on">🔑 Buy<small>Apartment</small></div><div>🏷 Rent</div></div><div class="lmf" style="left:118px;top:98px"><div class="all">▦ All types</div><div class="on">🏢 Apartment</div><div>🏠 House</div><div>🏡 Villa</div><div>🌳 Plot</div><div>🏬 Commercial</div></div>
+  <div class="pin" style="left:150px;top:200px">₹1.2 Cr</div><div class="pin" style="left:210px;top:260px">₹85 L</div>
+  <div class="pin" style="left:130px;top:340px">₹1.6 Cr</div><div class="pin" style="left:230px;top:380px">₹92 L</div>
+  <div class="dot" style="left:180px;top:300px"></div><div class="dot" style="left:260px;top:210px"></div><div class="dot" style="left:200px;top:450px"></div>
+  <div class="circle" style="right:12px;bottom:140px">◎</div>
+  <div class="pill" style="left:118px;bottom:84px">List · 48</div>
+  <div class="tabbar"><div class="on"><i>◉</i>Explore</div><div><i>♡</i>Saved</div><div class="fab"><i>＋</i></div><div><i>✉</i>Inbox</div><div><i>◔</i>Profile</div></div>
+</div></div>
+
+<!-- 2 Pin preview -->
+<div><div class="cap">2 · Pin preview<small>Tap a pin</small></div>
+<div class="phone"><div class="map"></div>
+  <div class="status"><span>9:41</span><span>●●● 5G</span></div>
+  <div class="search w">🔍&nbsp;Search area or city</div><div class="fb">⚙</div>
+  <div class="pin" style="left:90px;top:210px">₹1.2 Cr</div><div class="pin sel" style="left:150px;top:290px">₹1.6 Cr</div><div class="pin" style="left:210px;top:240px">₹85 L</div>
+  <div class="sheet" style="padding-bottom:84px"><div class="grab"></div>
+    <div class="ph" style="height:150px;background-image:url(https://picsum.photos/seed/home4/600/400)"></div>
+    <div class="row" style="justify-content:space-between;margin-top:10px"><span class="big">₹1.6 Cr</span><span class="heart">♥</span></div>
+    <div class="muted">3 bed · 2 bath · 1,450 sqft</div><div>24, Beach Rd, Kozhikode</div>
+    <div class="row" style="margin-top:12px"><div class="btn g">Close</div><div class="btn p">View details</div></div></div>
+  <div class="tabbar"><div class="on"><i>◉</i>Explore</div><div><i>♡</i>Saved</div><div class="fab"><i>＋</i></div><div><i>✉</i>Inbox</div><div><i>◔</i>Profile</div></div>
+</div></div>
+
+<!-- 3 Search -->
+<div><div class="cap">3 · Search<small>Suggestions as you type</small></div>
+<div class="phone"><div class="fill" style="background:#fff"></div>
+  <div class="status"><span>9:41</span><span>●●● 5G</span></div>
+  <div class="search" style="box-shadow:none;border:1px solid var(--accent)"><span style="color:var(--fg)">Kozhi|</span></div>
+  <div class="scroll" style="top:104px;padding:0 16px">
+    <div class="item" style="border:0"><span>📍</span><div><b>Use my current location</b></div></div>
+    <div class="muted" style="margin:8px 0 2px;font-size:11px;font-weight:700">SUGGESTIONS</div>
+    <div class="item"><span>🔍</span><div><b>Kozhikode</b><div class="muted">Kerala, India</div></div></div>
+    <div class="item"><span>🔍</span><div><b>Kozhikode Beach</b><div class="muted">Kozhikode</div></div></div>
+    <div class="item"><span>🔍</span><div><b>Kozhikode Medical College</b><div class="muted">Kozhikode</div></div></div>
+    <div class="muted" style="margin:14px 0 2px;font-size:11px;font-weight:700">RECENT</div>
+    <div class="item"><span>🕘</span><div><b>Palayam</b></div></div><div class="item"><span>🕘</span><div><b>Mavoor Road</b></div></div>
+  </div></div></div>
+
+<!-- 4 Filters -->
+<div><div class="cap">4 · Filters<small>Only what matters</small></div>
+<div class="phone"><div class="map"></div><div class="dim"></div>
+  <div class="sheet"><div class="grab"></div><div class="title" style="margin-bottom:12px">Filters</div>
+    <div class="muted" style="font-size:12px">Max price</div><div class="row" style="justify-content:space-between"><b>₹1.2 Cr</b></div><div class="track"><i></i><u></u></div>
+    <div class="muted" style="font-size:12px;margin-top:16px">Bedrooms</div>
+    <div class="row" style="margin-top:6px"><span class="chip">Any</span><span class="chip">1+</span><span class="chip on">2+</span><span class="chip">3+</span></div>
+    <div class="muted" style="font-size:12px;margin-top:16px">Type</div>
+    <div class="row" style="margin-top:6px;flex-wrap:wrap"><span class="chip on">Apartment</span><span class="chip">House</span><span class="chip">Villa</span><span class="chip">Plot</span></div>
+    <div class="row" style="margin-top:20px"><div class="btn g">Reset</div><div class="btn p" style="flex:2">Show 27 homes</div></div></div>
+</div></div>
+
+<!-- 5 List -->
+<div><div class="cap">5 · List view<small>Homes in the current map area</small></div>
+<div class="phone"><div class="map"></div>
+  <div class="sheet" style="top:150px;border-radius:22px 22px 0 0"><div class="grab"></div>
+    <div class="row" style="justify-content:space-between"><b>48 homes in this area</b><span class="chip">Price ↑</span></div>
+    <div class="item" style="margin-top:8px"><div class="ph" style="background-image:url(https://picsum.photos/seed/home1/200/150)"></div><div><b>₹85 L</b><div class="muted">2 bed · 1 bath · 980 sqft</div><div class="muted">12, Lake View St</div></div></div>
+    <div class="item"><div class="ph" style="background-image:url(https://picsum.photos/seed/home2/200/150)"></div><div><b>₹1.2 Cr</b><div class="muted">3 bed · 2 bath · 1,320 sqft</div><div class="muted">48, Park Ave</div></div></div>
+    <div class="item"><div class="ph" style="background-image:url(https://picsum.photos/seed/home3/200/150)"></div><div><b>₹1.6 Cr</b><div class="muted">3 bed · 2 bath · 1,450 sqft</div><div class="muted">24, Beach Rd</div></div></div>
+    <div class="item"><div class="ph" style="background-image:url(https://picsum.photos/seed/home5/200/150)"></div><div><b>₹1.9 Cr</b><div class="muted">4 bed · 3 bath · 2,100 sqft</div><div class="muted">7, Hill Rd</div></div></div>
+  </div></div></div>
+
+<!-- 6 Detail -->
+<div><div class="cap">6 · Property detail<small>Gallery, facts, contact bar</small></div>
+<div class="phone"><div class="scroll">
+  <div class="ph" style="height:230px;border-radius:0;background-image:url(https://picsum.photos/seed/home4-0/800/600)"></div>
+  <div style="padding:14px 16px"><span class="tag">For sale · Apartment</span><div class="big" style="margin-top:6px">₹1.6 Cr</div><div class="muted">24, Beach Rd, Kozhikode</div>
+    <div class="facts"><div><b>3</b>Bedrooms</div><div><b>2</b>Bathrooms</div><div><b>1,450</b>Sq ft</div></div>
+    <b>About this home</b><div class="muted" style="margin-top:4px">A bright 3-bedroom apartment in a quiet, well-connected neighbourhood. Open living space and good ventilation.</div>
+    <b style="display:block;margin-top:12px">Highlights</b><div class="row" style="flex-wrap:wrap;margin-top:6px"><span class="chip">Parking</span><span class="chip">Lift</span><span class="chip">Gym</span></div></div></div>
+  <div class="circle" style="left:12px;top:44px">‹</div><div class="circle heart" style="right:12px;top:44px">♥</div>
+  <div class="status" style="color:#fff"><span>9:41</span><span>●●● 5G</span></div>
+  <div class="nav" style="padding:10px 14px;gap:8px;height:70px"><div class="btn g">Message</div><div class="btn p">Call agent</div></div>
+</div></div>
+
+<!-- 7 Contact -->
+<div><div class="cap">7 · Contact form<small>Message the agent</small></div>
+<div class="phone"><div class="map"></div><div class="dim"></div>
+  <div class="sheet"><div class="grab"></div><div class="title">Message agent</div><div class="muted">Anil Kumar · replies in ~1 hr</div>
+    <div class="field"><small>Your name</small>Aghil</div><div class="field"><small>Phone</small>+91 98•••• 1234</div>
+    <div class="field" style="height:78px"><small>Message</small>Hi, is this still available? I'd like to visit this weekend.</div>
+    <div class="row" style="margin-top:14px"><div class="btn p">Send enquiry</div></div>
+    <div class="muted" style="text-align:center;margin-top:10px;font-size:12px">or chat on WhatsApp</div></div>
+</div></div>
+
+<!-- 8 Saved -->
+<div><div class="cap">8 · Saved homes<small>Your shortlist</small></div>
+<div class="phone"><div class="fill" style="background:#fff"></div>
+  <div class="status"><span>9:41</span><span>●●● 5G</span></div>
+  <div class="scroll" style="top:50px;padding:0 16px"><div class="title" style="margin-bottom:12px">Saved · 3</div>
+    <div class="ph" style="height:130px;background-image:url(https://picsum.photos/seed/home4/600/400);position:relative"></div>
+    <div class="row" style="justify-content:space-between;margin-top:8px"><b>₹1.6 Cr</b><span class="heart">♥</span></div><div class="muted">3 bed · 2 bath · 24, Beach Rd</div>
+    <div class="item" style="margin-top:10px"><div class="ph" style="background-image:url(https://picsum.photos/seed/home1/200/150)"></div><div><b>₹85 L</b><div class="muted">2 bed · 12, Lake View St</div></div><span class="heart" style="margin-left:auto">♥</span></div>
+    <div class="item"><div class="ph" style="background-image:url(https://picsum.photos/seed/home2/200/150)"></div><div><b>₹1.2 Cr</b><div class="muted">3 bed · 48, Park Ave</div></div><span class="heart" style="margin-left:auto">♥</span></div>
+  </div>
+  <div class="tabbar"><div><i>◉</i>Explore</div><div class="on"><i>♥</i>Saved</div><div class="fab"><i>＋</i></div><div><i>✉</i>Inbox</div><div><i>◔</i>Profile</div></div>
+</div></div>
+
+<!-- 9 Post listing -->
+<div><div class="cap">9 · Post a listing<small>For owners and agents</small></div>
+<div class="phone"><div class="fill" style="background:#fff"></div>
+  <div class="status"><span>9:41</span><span>●●● 5G</span></div>
+  <div class="scroll" style="top:50px;padding:0 16px"><div class="title">New listing</div><div class="muted">Step 1 of 3 · Basics</div>
+    <div class="track" style="margin:10px 0 14px"><i style="width:33%"></i></div>
+    <div class="row"><span class="chip on">Sell</span><span class="chip">Rent</span></div>
+    <div class="ph" style="height:96px;margin-top:12px;display:grid;place-items:center;border:1.5px dashed #9ca3af;background:#f9fafb;color:var(--muted)">＋ Add photos (up to 10)</div>
+    <div class="field"><small>Price</small>₹ 1,20,00,000</div>
+    <div class="row"><div class="field" style="flex:1"><small>Bedrooms</small>3</div><div class="field" style="flex:1"><small>Bathrooms</small>2</div></div>
+    <div class="field"><small>Location</small>📍 Drop a pin on the map</div>
+  </div>
+  <div class="nav" style="padding:10px 14px;height:70px"><div class="btn p">Continue</div></div>
+</div></div>
+
+<!-- 10 Profile -->
+<div><div class="cap">10 · Profile &amp; login<small>Phone number OTP</small></div>
+<div class="phone"><div class="fill" style="background:#fff"></div>
+  <div class="status"><span>9:41</span><span>●●● 5G</span></div>
+  <div class="scroll" style="top:50px;padding:0 16px"><div class="row" style="gap:12px"><div class="circle" style="background:var(--accent);color:#fff;font-weight:800;box-shadow:none;width:52px;height:52px">A</div><div><b>Aghil</b><div class="muted">+91 98•••• 1234</div></div></div>
+    <div class="sw" style="margin-top:16px"><span>My listings</span><span class="muted">2 ›</span></div><div class="sw"><span>Saved searches</span><span class="muted">1 ›</span></div>
+    <div class="sw"><span>Price alerts</span><span class="tog"></span></div><div class="sw"><span>Dark mode</span><span class="muted">Auto ›</span></div><div class="sw"><span>Help &amp; support</span><span class="muted">›</span></div>
+    <div class="sw"><span style="color:#e11d48">Log out</span></div>
+    <div class="ph" style="margin-top:18px;padding:14px;background:#f3f4f6"><b>Login screen</b><div class="field" style="background:#fff"><small>Phone number</small>+91 | 98•••• 1234</div><div class="btn p" style="margin-top:10px">Send OTP</div></div>
+  </div>
+  <div class="tabbar"><div><i>◉</i>Explore</div><div><i>♡</i>Saved</div><div class="fab"><i>＋</i></div><div><i>✉</i>Inbox</div><div class="on"><i>◔</i>Profile</div></div>
+</div></div>
+
+</div>
+<div id="more" style="margin-top:20px"></div>
+<script>
+const img = n => `background-image:url(https://picsum.photos/seed/${n}/300/220)`;
+const status = `<div class="status"><span>9:41</span><span>●●● 5G</span></div>`;
+const NAV = (a) => `<div class="tabbar">${[["◉","Explore","Map"],["♡","Saved"],["＋","","fab"],["✉","Inbox"],["◔","Profile"]].map(([i, t, k]) => k === "fab" ? `<div class="fab"><i>＋</i></div>` : `<div class="${t === a || k === a ? "on" : ""}"><i>${i}</i>${t}</div>`).join("")}</div>`;
+const phone = (t, s, inner) => `<div><div class="cap">${t}<small>${s}</small></div><div class="phone">${inner}</div></div>`;
+const page = (a, body) => `<div class="fill" style="background:#fff"></div>${status}<div class="sc">${body}</div>${NAV(a)}`;
+const full = body => `<div class="fill" style="background:#fff"></div>${status}${body}`;
+const bars = (a, hi) => `<div class="bars">${a.map((h, i) => `<i class="${i === hi ? "hi" : ""}" style="height:${h}%"></i>`).join("")}</div>`;
+const mapBase = `<div class="map"></div>${status}`;
+const sec = (name, desc, items) => `<h2>${name}</h2><div class="desc">${desc}</div><div class="grid">${items.join("")}</div>`;
+const browser = (url, body, cap) => `<div><div class="cap" style="text-align:left">${cap}</div><div class="browser"><div class="url"><i></i><i></i><i></i><span>${url}</span></div>${body}</div></div>`;
+const out = [];
+
+/* ============ 1. ONBOARDING & STATES ============ */
+out.push(sec("First run & system states", "What users see before data exists, when something goes wrong, or when they have no signal.", [
+  phone("First run", "Explain why we ask for location", full(`<div style="left:24px;right:24px;top:110px" class="c"><div class="big-ico">📍</div><div class="title">Find homes near you</div><div class="muted" style="margin:8px 0 24px">Allow location so the map opens where you are. We never share it.</div><div class="btn p">Allow location</div><div class="muted small" style="margin-top:14px">Enter a city instead</div></div>`)),
+  phone("Language", "Malayalam · Hindi · English", full(`<div style="left:20px;right:20px;top:60px"><div class="title">Choose language</div><div class="muted small" style="margin-bottom:10px">ഭാഷ തിരഞ്ഞെടുക്കുക · भाषा चुनें</div>
+    <div class="radio on"><i></i><b>English</b></div><div class="radio"><i></i><b>മലയാളം</b><span class="muted small">Malayalam</span></div><div class="radio"><i></i><b>हिन्दी</b><span class="muted small">Hindi</span></div><div class="radio"><i></i><b>தமிழ்</b><span class="muted small">Tamil</span></div></div><div style="left:20px;right:20px;bottom:20px" class="btn p">Continue</div>`)),
+  phone("Loading", "Skeleton instead of a spinner", `${mapBase}<div class="search">🔍&nbsp;Search area or city</div>
+    <div class="sheet" style="bottom:0"><div class="grab"></div><div class="sk" style="height:140px"></div><div class="sk" style="height:22px;width:50%;margin-top:12px"></div><div class="sk" style="height:14px;width:80%;margin-top:8px"></div><div class="sk" style="height:14px;width:65%;margin-top:6px"></div><div class="sk" style="height:42px;margin-top:14px"></div></div>`),
+  phone("No results", "Suggest a way forward", full(`<div style="left:24px;right:24px;top:150px" class="c"><div class="big-ico">🏠</div><div class="title">No homes match</div><div class="muted" style="margin:8px 0 20px">Try a higher price, fewer bedrooms, or zoom out.</div><div class="btn p">Clear filters</div><div class="btn g" style="margin-top:8px">Zoom out</div></div>`)),
+  phone("Offline", "Show saved homes, retry quietly", full(`<div style="left:0;right:0;top:34px;background:#14161a;color:#fff;padding:8px 16px;font-size:12px" class="row sp"><span>⚠ You're offline</span><span>Retry</span></div>
+    <div style="left:16px;right:16px;top:90px"><div class="title">Saved · available offline</div><div class="card row"><div class="ph" style="width:70px;height:56px;${img("of1")}"></div><div><b>₹1.6 Cr</b><div class="muted small">24 Beach Rd</div></div></div><div class="card row"><div class="ph" style="width:70px;height:56px;${img("of2")}"></div><div><b>₹85 L</b><div class="muted small">12 Lake View St</div></div></div>
+    <div class="muted small c" style="margin-top:30px">Map needs internet. We'll reconnect automatically.</div></div>`)),
+  phone("Error", "Calm, with a clear action", full(`<div style="left:24px;right:24px;top:150px" class="c"><div class="big-ico">⚠️</div><div class="title">Something went wrong</div><div class="muted" style="margin:8px 0 20px">We couldn't load listings. It's on us, not you.</div><div class="btn p">Try again</div><div class="muted small" style="margin-top:14px">Contact support</div></div>`)),
+]));
+
+/* ============ 2. NOTIFICATIONS & TRUST ============ */
+out.push(sec("Notifications, privacy & reporting", "Alerts that bring people back, contact that protects phone numbers, and a way to report bad listings.", [
+  phone("Notifications", "Bell on the profile tab", page("Profile", `<div class="row sp" style="margin:6px 0"><div class="title">Notifications</div><span class="muted small">Mark all read</span></div>
+    <div class="notif un"><div class="ic">📉</div><div><b>Price drop · 24 Beach Rd</b><div class="muted small">₹1.7 Cr → ₹1.6 Cr · 5m ago</div></div></div>
+    <div class="notif un"><div class="ic">🏠</div><div><b>3 new homes match your search</b><div class="muted small">2+ bed · under ₹1.2 Cr · 1h ago</div></div></div>
+    <div class="notif"><div class="ic">💬</div><div><b>Anil Kumar replied</b><div class="muted small">"Yes, available Saturday" · 3h</div></div></div>
+    <div class="notif"><div class="ic">📅</div><div><b>Visit tomorrow 11:00</b><div class="muted small">12 Lake View St · reminder</div></div></div>
+    <div class="notif"><div class="ic">❌</div><div><b>Listing sold</b><div class="muted small">3 Canal Rd was in your saved homes</div></div></div>`)),
+  phone("Notification settings", "Channels and quiet hours", page("Profile", `<div class="title" style="margin:6px 0">Alerts</div>
+    ${[["Price drops","on"],["New matches","on"],["Messages","on"],["Visit reminders","on"],["Tips & offers","off"]].map(r => `<div class="row sp" style="padding:12px 0;border-top:1px solid var(--line)"><span>${r[0]}</span><span class="tog ${r[1]}"></span></div>`).join("")}
+    <div class="title" style="margin:14px 0 4px;font-size:15px">Send via</div><span class="chip on">Push</span><span class="chip on">WhatsApp</span><span class="chip">SMS</span><span class="chip">Email</span>
+    <div class="row sp card"><span>Quiet hours</span><b>10 pm – 8 am</b></div>`)),
+  phone("Contact privately", "Number is never shown", `${mapBase}<div class="dim"></div><div class="sheet"><div class="grab"></div><div class="title">Contact Anil Kumar</div><div class="muted small" style="margin-bottom:12px">Your number stays private. Calls and chats go through Nestmap.</div>
+    <div class="btn p">💬 Chat in app</div><div class="btn g" style="margin-top:8px">📞 Call via Nestmap</div><div class="btn g" style="margin-top:8px">WhatsApp</div><div class="muted small c" style="margin-top:10px">🔒 Masked number: +91 80•• ••• 4471</div></div>`),
+  phone("Report listing", "From the ⋯ menu on any listing", `${mapBase}<div class="dim"></div><div class="sheet"><div class="grab"></div><div class="title">Report this listing</div>
+    <div class="radio on"><i></i>Already sold or rented</div><div class="radio"><i></i>Photos don't match</div><div class="radio"><i></i>Wrong price or location</div><div class="radio"><i></i>Duplicate listing</div><div class="radio"><i></i>Scam or suspicious</div>
+    <div class="field" style="height:56px"><small>Details (optional)</small></div><div class="btn r" style="margin-top:12px">Submit report</div><div class="muted small c" style="margin-top:8px">Also: Block this user</div></div>`),
+]));
+
+/* ============ 3. PROPERTY DEPTH ============ */
+out.push(sec("Property depth", "The detail page grows richer without becoming noisy: key facts first, depth below.", [
+  phone("Detail · top", "Verified badge, more facts", `<div class="sc" style="top:0;bottom:0;padding:0"><div class="ph" style="height:210px;border-radius:0;${img("dt1")}"></div>
+    <div style="padding:12px 16px"><span class="st ok">✓ Verified listing</span> <span class="st gr">Updated 2 days ago</span><div class="big" style="margin-top:6px">₹1.6 Cr</div><div class="muted">24 Beach Rd, Kozhikode</div>
+    <div class="facts"><div><b>3</b>Bed</div><div><b>2</b>Bath</div><div><b>1,450</b>Sq ft</div></div>
+    <div class="kv"><div><span>Floor</span>4 of 9</div><div><span>Facing</span>East</div><div><span>Age</span>3 years</div><div><span>Furnishing</span>Semi-furnished</div><div><span>Available</span>Immediately</div><div><span>RERA ID</span>K-RERA/1043</div></div>
+    <div class="row" style="margin-top:12px"><span class="chip">Floor plan</span><span class="chip">Video tour</span><span class="chip">360°</span></div></div></div>${status}
+    <div class="circle" style="left:12px;top:44px">‹</div><div class="row" style="right:12px;top:44px"><div class="circle">⤴</div><div class="circle" style="color:#e11d48">♥</div></div>
+    <div style="left:0;right:0;bottom:0;padding:10px 14px;background:#fff;border-top:1px solid var(--line)" class="row"><div class="btn g" style="flex:1">Message</div><div class="btn g" style="flex:1">📅 Visit</div><div class="btn p" style="flex:1">Call</div></div>`),
+  phone("Detail · below", "Nearby, EMI, price history, similar", `<div class="fill" style="background:#fff"></div>${status}<div class="sc" style="bottom:0;padding-bottom:0">
+    <b>Nearby</b><div class="nb"><span>🏫 Beach Public School</span><span class="muted">0.6 km</span></div><div class="nb"><span>🏥 Baby Memorial Hospital</span><span class="muted">1.8 km</span></div><div class="nb"><span>🚌 Beach Bus Stop</span><span class="muted">250 m</span></div>
+    <div class="card"><div class="row sp"><b>EMI calculator</b><span class="st ok">₹68,400 / mo</span></div><div class="muted small">₹1.28 Cr loan · 20 yrs · 8.4%</div><div style="height:6px;background:var(--line);border-radius:3px;margin-top:10px"><div style="width:60%;height:6px;background:var(--accent);border-radius:3px"></div></div></div>
+    <div class="card"><b>Price history</b>${bars([60,60,70,70,85,85,90], 6)}<div class="muted small">▼ ₹10 L drop 5 days ago</div></div>
+    <b style="display:block;margin-top:12px">Similar homes</b><div class="row" style="margin-top:6px"><div class="ph" style="flex:1;height:70px;${img("sm1")}"></div><div class="ph" style="flex:1;height:70px;${img("sm2")}"></div></div></div>`),
+  phone("Compare homes", "Pick up to 3, differences highlighted", full(`<div style="left:16px;right:16px;top:44px"><div class="row sp"><div class="title">Compare</div><span class="muted small">Clear</span></div>
+    <div class="row" style="margin:10px 0 4px"><div class="ph" style="flex:1;height:60px;${img("c1")}"></div><div class="ph" style="flex:1;height:60px;${img("c2")}"></div><div class="ph" style="flex:1;height:60px;${img("c3")}"></div></div>
+    <div class="cmp"><div></div><div><b>A</b></div><div><b>B</b></div><div><b>C</b></div>
+    <div>Price</div><div class="best">₹85 L</div><div>₹1.2 Cr</div><div>₹1.6 Cr</div><div>Beds</div><div>2</div><div>3</div><div class="best">3</div>
+    <div>Area</div><div>980</div><div>1,320</div><div class="best">1,450</div><div>₹/sqft</div><div class="best">8.7k</div><div>9.1k</div><div>11k</div>
+    <div>Floor</div><div>2</div><div>5</div><div>4</div><div>Parking</div><div>—</div><div>✓</div><div>✓</div><div>Commute</div><div>12m</div><div class="best">8m</div><div>15m</div></div></div>`)),
+  phone("Schedule a visit", "Pick a day and slot", `${mapBase}<div class="dim"></div><div class="sheet"><div class="grab"></div><div class="title">Schedule a visit</div><div class="muted small" style="margin-bottom:10px">24 Beach Rd · with Anil Kumar</div>
+    <div class="day"><div><span>Fri</span><b>17</b></div><div class="on"><span>Sat</span><b>18</b></div><div><span>Sun</span><b>19</b></div><div><span>Mon</span><b>20</b></div><div><span>Tue</span><b>21</b></div></div>
+    <div class="slots"><div>10:00</div><div class="on">11:00</div><div>12:00</div><div>4:00</div><div>5:00</div><div>6:00</div></div>
+    <div class="field"><small>Note (optional)</small>Coming with family</div><div class="btn p" style="margin-top:12px">Request visit</div></div>`),
+  phone("Share", "Link, WhatsApp, preview card", `${mapBase}<div class="dim"></div><div class="sheet"><div class="grab"></div><div class="title">Share</div>
+    <div class="card row"><div class="ph" style="width:70px;height:56px;${img("dt1")}"></div><div><b>₹1.6 Cr · 3 bed</b><div class="muted small">nestmap.app/home/4821</div></div></div>
+    <div class="row" style="margin-top:14px;justify-content:space-around"><div class="c"><div class="circle" style="background:#25d366;color:#fff">W</div><div class="small">WhatsApp</div></div><div class="c"><div class="circle">🔗</div><div class="small">Copy link</div></div><div class="c"><div class="circle">✉</div><div class="small">Message</div></div><div class="c"><div class="circle">⋯</div><div class="small">More</div></div></div></div>`),
+]));
+
+/* ============ 4. MAP POWER ============ */
+out.push(sec("Map power tools", "Keeps the map clean at scale and lets people search the way they think. All tucked behind one layers button.", [
+  phone("Clusters", "Merge pins when zoomed out", `${mapBase}<div class="search">🔍&nbsp;Kozhikode</div>
+    <div class="clu" style="left:80px;top:220px">24</div><div class="clu" style="left:190px;top:280px;width:46px;height:46px">61</div><div class="clu" style="left:110px;top:370px;width:32px;height:32px;font-size:12px">9</div><div class="clu" style="left:230px;top:420px;width:32px;height:32px;font-size:12px">7</div>
+    <div class="circle" style="right:12px;top:100px">◫</div><div class="circle" style="right:12px;bottom:140px">◎</div>
+    <div style="left:110px;bottom:84px;background:#14161a;color:#fff;border-radius:999px;padding:10px 18px;font-weight:600;font-size:13px">List · 214</div>${NAV("Map")}`),
+  phone("Layers", "Map style and overlays", `<div class="map sat"></div>${status}<div class="search">🔍&nbsp;Kozhikode</div><div class="dim"></div>
+    <div class="sheet"><div class="grab"></div><div class="title">Map layers</div>
+    <div class="row" style="margin:12px 0"><div style="flex:1" class="c"><div class="ph" style="height:56px;background:#f1ece0;border:2px solid var(--accent)"></div><div class="small">Standard</div></div><div style="flex:1" class="c"><div class="ph" style="height:56px;background:#4d6b46"></div><div class="small">Satellite</div></div><div style="flex:1" class="c"><div class="ph" style="height:56px;background:linear-gradient(90deg,#99d5cd,#0f766e)"></div><div class="small">Price heat</div></div></div>
+    <div class="row sp" style="padding:10px 0;border-top:1px solid var(--line)"><span>Schools</span><span class="tog off"></span></div><div class="row sp" style="padding:10px 0;border-top:1px solid var(--line)"><span>Metro / bus</span><span class="tog off"></span></div><div class="row sp" style="padding:10px 0;border-top:1px solid var(--line)"><span>Flood-prone areas</span><span class="tog off"></span></div></div>`),
+  phone("Draw area", "Search inside your own shape", `${mapBase}<div class="search">✏ Draw your area</div>
+    <svg style="left:60px;top:200px" width="200" height="230" viewBox="0 0 200 230"><path d="M30 40 L150 20 L180 120 L130 200 L40 170 Z" fill="rgba(15,118,110,.18)" stroke="#0f766e" stroke-width="3" stroke-dasharray="6 5"/></svg>
+    <div class="pin" style="left:110px;top:260px">₹1.2 Cr</div><div class="pin" style="left:150px;top:330px">₹92 L</div>
+    <div style="left:16px;right:16px;bottom:84px;background:#fff;border-radius:16px;padding:12px;box-shadow:var(--shadow)" class="row sp"><div><b>17 homes</b><div class="muted small">inside your area</div></div><div class="row"><span class="chip">Redraw</span><span class="chip on">Save area</span></div></div>${NAV("Map")}`),
+  phone("Commute filter", "Homes within X min of work", `${mapBase}<div class="dim" style="background:rgba(0,0,0,.25)"></div><div class="sheet"><div class="grab"></div><div class="title">Commute</div>
+    <div class="field"><small>Destination</small>📍 Cyberpark, Kozhikode</div><div class="row" style="margin-top:12px"><span class="chip">🚗 Drive</span><span class="chip on">🚌 Transit</span><span class="chip">🚶 Walk</span></div>
+    <div class="muted small" style="margin-top:12px">Max time</div><div class="row sp"><b>30 min</b></div><div style="height:6px;background:var(--line);border-radius:3px;margin:8px 0 4px"><div style="width:50%;height:6px;background:var(--accent);border-radius:3px"></div></div>
+    <div class="btn p" style="margin-top:14px">Show 41 homes</div></div>`),
+]));
+
+/* ============ 7. LEGAL ============ */
+out.push(sec("Legal & account control", "Consent, privacy and data rights (India's DPDP Act), shown in plain language.", [
+  phone("Consent", "Shown at signup", `${mapBase}<div class="dim"></div><div class="sheet"><div class="grab"></div><div class="title">Before you start</div><div class="muted small" style="margin:6px 0 12px">We use your phone number to log you in and your location to show nearby homes.</div>
+    <div class="row" style="padding:8px 0"><span style="width:18px;height:18px;border-radius:5px;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:12px">✓</span><span class="small">I agree to the <u>Terms</u> and <u>Privacy Policy</u></span></div>
+    <div class="row" style="padding:8px 0"><span style="width:18px;height:18px;border-radius:5px;border:2px solid #cbd5e1"></span><span class="small">Send me price-drop and offer updates (optional)</span></div><div class="btn p" style="margin-top:12px">Agree &amp; continue</div></div>`),
+  phone("Privacy & data", "Under Profile → Settings", page("Profile", `<div class="title" style="margin:6px 0">Privacy &amp; data</div>
+    <div class="row sp" style="padding:12px 0;border-top:1px solid var(--line)"><span>Share location</span><span class="tog"></span></div><div class="row sp" style="padding:12px 0;border-top:1px solid var(--line)"><span>Personalised offers</span><span class="tog off"></span></div>
+    <div class="row sp" style="padding:12px 0;border-top:1px solid var(--line)"><span>Blocked users</span><span class="muted">2 ›</span></div><div class="row sp" style="padding:12px 0;border-top:1px solid var(--line)"><span>Download my data</span><span class="muted">›</span></div>
+    <div class="row sp" style="padding:12px 0;border-top:1px solid var(--line)"><span>Terms · Privacy policy</span><span class="muted">›</span></div><div class="btn r" style="margin-top:14px">Delete my account</div>`)),
+  phone("Delete account", "Clear and reversible for 14 days", `${mapBase}<div class="dim"></div><div class="sheet"><div class="grab"></div><div class="title">Delete your account?</div><div class="muted small" style="margin:6px 0 10px">This removes your profile, saved homes, messages and 2 listings. You can restore within 14 days by logging in.</div>
+    <div class="card small">⚠ Active listings will be taken offline.</div><div class="btn r" style="margin-top:12px">Delete account</div><div class="btn g" style="margin-top:8px">Keep my account</div></div>`),
+]));
+
+/* ============ 8. WEB ============ */
+const hdr = `<div class="top"><b>Nest<i>map</i></b><div class="row"><span class="chip on">Buy</span><span class="chip">Rent</span></div><div class="row"><span class="muted">Post</span><span class="av" style="width:30px;height:30px">A</span></div></div>`;
+out.push(`<h2>Web & desktop</h2><div class="desc">The same product as a website: shareable listing pages that Google and WhatsApp can read, and a map-plus-list layout for big screens.</div><div class="grid">
+${browser("nestmap.app/kozhikode", `${hdr}<div class="split"><div class="l"><div class="inp" style="background:var(--soft);border:0;padding:10px 14px;border-radius:10px;color:var(--muted)">🔍 Kozhikode</div><div style="margin:8px 0"><span class="chip on">2+ bed</span><span class="chip">Under ₹1.2 Cr</span><span class="chip">Type</span></div>
+  ${[["₹1.6 Cr","3 bed · 24 Beach Rd","w1"],["₹85 L","2 bed · 12 Lake View St","w2"],["₹1.2 Cr","3 bed · 48 Park Ave","w3"]].map(r => `<div class="li"><div class="ph" style="width:96px;height:72px;${img(r[2])}"></div><div><b>${r[0]}</b><div class="muted small">${r[1]}</div><span class="st ok">✓ Verified</span></div></div>`).join("")}</div>
+  <div class="m"><div class="map" style="background-size:cover"></div><div class="pin" style="left:150px;top:120px">₹1.2 Cr</div><div class="pin" style="left:300px;top:200px">₹85 L</div><div class="clu" style="left:220px;top:300px">12</div><div class="pin" style="left:420px;top:150px;background:#14161a;color:#fff">₹1.6 Cr</div></div></div>`, "Desktop · map with list on the left")}
+${browser("nestmap.app/home/4821-3-bed-apartment-beach-road-kozhikode", `${hdr}<div style="display:flex;gap:20px;padding:20px;height:440px;overflow:hidden"><div style="flex:1.4"><div class="ph" style="height:260px;${img("dt1")}"></div><div class="row" style="margin-top:8px"><div class="ph" style="flex:1;height:70px;${img("dt2")}"></div><div class="ph" style="flex:1;height:70px;${img("dt3")}"></div><div class="ph" style="flex:1;height:70px;${img("dt4")}"></div></div></div>
+  <div style="flex:1"><span class="st ok">✓ Verified listing</span><div class="big" style="margin-top:6px">₹1.6 Cr</div><div class="muted">3 bed apartment · 24 Beach Rd, Kozhikode</div><div class="facts"><div><b>3</b>Bed</div><div><b>2</b>Bath</div><div><b>1,450</b>Sq ft</div></div>
+  <div class="card"><div class="row"><div class="av">A</div><div><b>Anil Kumar</b> <span class="st ok">✓</span><div class="muted small">★ 4.7 · replies in ~1 hr</div></div></div><div class="btn p" style="margin-top:10px">Message agent</div><div class="btn g" style="margin-top:6px">📅 Schedule a visit</div></div></div></div>`, "Public listing page · SEO URL, opens without the app")}
+<div><div class="cap" style="text-align:left">Link preview · what WhatsApp shows</div><div class="og"><div class="ph" style="${img("dt1")}"></div><div><b>₹1.6 Cr · 3 bed apartment in Beach Rd</b><div class="muted small">nestmap.app · Verified listing · 1,450 sq ft</div></div></div></div></div>`);
+
+/* ============ 9. BRAND ============ */
+out.push(`<h2>Brand & design system</h2><div class="desc">A placeholder identity so the app can be installed (PWA icons need it). Name, logo and colours are all open to change.</div><div class="brand">
+<div class="card"><b>Logo</b><div class="row" style="margin-top:12px"><div style="width:64px;height:64px;border-radius:16px;background:var(--accent);display:grid;place-items:center"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z"/><path d="M9 11l3-2.5 3 2.5v3H9z" fill="#fff"/></svg></div><div class="title" style="font-size:26px">Nest<span style="color:var(--accent)">map</span></div></div>
+<div class="row" style="margin-top:14px"><div style="width:44px;height:44px;border-radius:12px;background:#14161a"></div><div style="width:44px;height:44px;border-radius:50%;background:var(--accent)"></div><div style="width:44px;height:44px;border-radius:12px;background:#fff;border:1px solid var(--line)"></div><span class="muted small">app icon variants</span></div></div>
+<div class="card"><b>Colour</b><div class="swt"><i style="background:#0f766e"></i><i style="background:#14161a"></i><i style="background:#2dd4bf"></i><i style="background:#f6f7f9;border:1px solid var(--line)"></i></div><div class="swt"><i style="background:#15803d"></i><i style="background:#b45309"></i><i style="background:#b91c1c"></i><i style="background:#1d4ed8"></i></div><div class="muted small" style="margin-top:8px">Teal accent · ink · success / warning / error / info</div></div>
+<div class="card"><b>Type &amp; components</b><div class="title" style="margin-top:8px;font-size:24px">Heading 24 / 800</div><div style="margin-top:4px">Body 14 / 400 — system sans, tight tracking on headings.</div><div class="row" style="margin-top:10px"><span class="btn p" style="padding:8px 14px">Primary</span><span class="btn g" style="padding:8px 14px">Secondary</span><span class="chip on">Chip</span><span class="pin">₹1.2 Cr</span></div>
+<div class="muted small" style="margin-top:8px">Radius 12–22 · soft shadows · one accent only</div></div></div>`);
+
+
+
+/* ============ RESPONSIVE LAYOUTS ============ */
+const tablet = (cap, sub, inner) => `<div><div class="cap" style="text-align:left">${cap}<small>${sub}</small></div><div class="tablet">${inner}</div></div>`;
+const dh = `<div class="top"><b>Nest<i>map</i></b><div class="row"><span class="chip on">Buy</span><span class="chip">Rent</span></div><div class="row"><span class="muted">Saved</span><span class="muted">Messages</span><span class="muted">Post</span><span class="av" style="width:30px;height:30px">A</span></div></div>`;
+const rail = a => `<div class="rail"><b style="color:var(--accent);font-size:16px">N</b>${[["◉","Map"],["♡","Saved"],["✉","Inbox"],["＋","Post"],["◔","Me"]].map(([i, t]) => `<div class="${t === a ? "on" : ""}"><i>${i}</i>${t}</div>`).join("")}</div>`;
+const lst = rows => rows.map(r => `<div class="li"><div class="ph" style="width:84px;height:64px;${img(r[2])}"></div><div><b>${r[0]}</b><div class="muted small">${r[1]}</div></div></div>`).join("");
+const hcard = (p, a, s) => `<div class="card" style="margin:0;padding:0;overflow:hidden"><div class="ph" style="height:110px;border-radius:0;${img(s)}"></div><div style="padding:10px"><div class="row sp"><b>${p}</b><span style="color:#e11d48">♥</span></div><div class="muted small">${a}</div></div></div>`;
+
+out.push(`<h2>Responsive layouts</h2><div class="desc">One product that adapts. Phones use a bottom nav and sheets. Tablets use a slim side rail and a side panel. Desktop uses a top bar with the map and list side by side. The installed PWA is the phone or tablet layout without browser chrome.</div>
+<div class="bpgrid">${[["Mobile","under 640 px","Bottom nav · full-screen map · bottom sheets · one column"],["Tablet","640 – 1024 px","Side rail · list panel beside the map · detail slides in from the right"],["Desktop","over 1024 px","Top bar · permanent list beside the map · detail as a full page · multi-column dashboards"],["Installed PWA","any size","No browser bar · safe-area padding · splash screen · saved homes work offline"]].map(b => `<div class="card" style="margin:0"><b>${b[0]}</b><div class="muted small">${b[1]}</div><div style="margin-top:8px">${b[2]}</div></div>`).join("")}</div>
+<div class="grid" style="margin-top:22px">
+${tablet("Tablet · map home", "Rail + list panel + map", `${rail("Map")}<div class="pane"><div class="field" style="margin:0 0 10px">🔍 Kozhikode</div><span class="chip on">Buy</span><span class="chip">Rent</span><span class="chip">2+ bed</span>${lst([["₹1.6 Cr","3 bed · 24 Beach Rd","t1"],["₹85 L","2 bed · 12 Lake View St","t2"],["₹1.2 Cr","3 bed · 48 Park Ave","t3"],["₹92 L","2 bed · 5 Rose Ave","t4"],["₹1.9 Cr","4 bed · 7 Hill Rd","t5"]])}</div><div class="mapw"><div class="map"></div><div class="pin" style="left:90px;top:120px">₹1.2 Cr</div><div class="pin" style="left:200px;top:220px;background:#14161a;color:#fff">₹1.6 Cr</div><div class="clu" style="left:330px;top:150px">12</div><div class="pin" style="left:380px;top:330px">₹85 L</div></div>`)}
+${tablet("Tablet · detail", "Side panel keeps the map in view", `${rail("Map")}<div class="mapw"><div class="map"></div><div class="pin" style="left:90px;top:120px">₹1.2 Cr</div><div class="pin" style="left:200px;top:240px;background:#14161a;color:#fff">₹1.6 Cr</div><div class="pin" style="left:120px;top:360px">₹85 L</div>
+  <div class="side-panel"><div class="ph" style="height:150px;${img("dt1")}"></div><div class="row" style="margin-top:8px"><span class="st ok">✓ Verified</span></div><div class="big" style="margin-top:4px">₹1.6 Cr</div><div class="muted small">3 bed apartment · 24 Beach Rd</div><div class="facts"><div><b>3</b>Bed</div><div><b>2</b>Bath</div><div><b>1,450</b>Sq ft</div></div><div class="row"><div class="btn g" style="flex:1">📅 Visit</div><div class="btn p" style="flex:1">Message</div></div><div class="muted small" style="margin-top:10px">Nearby: school 0.6 km · hospital 1.8 km · bus 250 m</div></div></div>`)}
+${browser("nestmap.app/saved", `${dh}<div style="padding:18px 22px;height:440px;overflow:hidden"><div class="row sp"><div class="title">Saved · 6 homes</div><div class="row"><span class="chip on">Homes</span><span class="chip">Searches 2</span><span class="chip">Compare</span></div></div><div class="grid3" style="margin-top:14px">${[["₹1.6 Cr","3 bed · 24 Beach Rd","s1"],["₹85 L","2 bed · 12 Lake View St","s2"],["₹1.2 Cr","3 bed · 48 Park Ave","s3"],["₹92 L","2 bed · 5 Rose Ave","s4"],["₹1.9 Cr","4 bed · 7 Hill Rd","s5"],["₹78 L","2 bed · 61 Main St","s6"]].map(r => hcard(r[0], r[1], r[2])).join("")}</div></div>`, "Desktop · saved homes in a grid")}
+${browser("nestmap.app/inbox", `${dh}<div style="display:flex;height:440px"><div style="width:290px;border-right:1px solid var(--line);padding:12px;overflow:hidden"><b>Messages</b>${[["Anil Kumar","24 Beach Rd","Saturday 11am?","5m"],["Fathima R.","12 Lake View St","Parking for 2 cars.","2h"],["Owner · Joseph","3 Canal Rd","Thanks for your interest!","1d"]].map((c, i) => `<div class="row" style="padding:10px 6px;border-top:1px solid var(--line);${i === 0 ? "background:#f3faf9" : ""}"><div class="av">${c[0][0]}</div><div style="flex:1;min-width:0"><div class="row sp"><b>${c[0]}</b><span class="muted small">${c[3]}</span></div><div class="muted small">${c[1]}</div><div class="small">${c[2]}</div></div></div>`).join("")}</div>
+  <div style="flex:1;padding:12px 16px;position:relative"><div class="row" style="padding-bottom:10px;border-bottom:1px solid var(--line)"><div class="av">A</div><div><b>Anil Kumar</b><div class="muted small">Agent · replies in ~1 hr</div></div></div><div class="bub me">Is this still available?</div><div class="bub">Yes! Would you like to visit Saturday 11am?</div><div class="bub me">Works for me 👍</div><div style="position:absolute;left:16px;right:16px;bottom:12px" class="row"><div class="field" style="flex:1;margin:0;border-radius:999px">Type a message…</div><div class="av">➤</div></div></div>
+  <div style="width:250px;border-left:1px solid var(--line);padding:12px"><div class="ph" style="height:110px;${img("dt1")}"></div><b style="display:block;margin-top:8px">₹1.6 Cr</b><div class="muted small">3 bed · 24 Beach Rd</div><div class="btn g" style="margin-top:10px">📅 Schedule visit</div><div class="btn g" style="margin-top:6px">View listing</div></div></div>`, "Desktop · messages in three columns")}
+${browser("nestmap.app/post", `${dh}<div style="display:flex;height:440px"><div style="width:200px;padding:18px;border-right:1px solid var(--line)"><div class="muted small" style="margin-bottom:10px">NEW LISTING</div>${["Basics","Photos","Details","Location","Review"].map((s, i) => `<div class="row" style="padding:8px 0"><span class="av" style="width:24px;height:24px;font-size:11px;${i > 2 ? "background:#e5e7eb;color:#6b7280" : ""}">${i < 2 ? "✓" : i + 1}</span><span style="${i === 2 ? "font-weight:700" : ""}">${s}</span></div>`).join("")}</div>
+  <div style="flex:1;padding:18px 22px"><div class="title">Details</div><div class="row" style="margin-top:6px"><div class="field" style="flex:1"><small>Price</small>₹ 1,10,00,000</div><div class="field" style="flex:1"><small>Bedrooms</small>3</div><div class="field" style="flex:1"><small>Bathrooms</small>2</div></div><div class="row"><div class="field" style="flex:1"><small>Area (sq ft)</small>1,450</div><div class="field" style="flex:1"><small>Floor</small>4 of 9</div><div class="field" style="flex:1"><small>Furnishing</small>Semi ▾</div></div><div class="field" style="height:80px"><small>Description</small>Bright, airy, close to the beach…</div><div class="row" style="margin-top:14px"><span class="btn g" style="padding:10px 20px">Save draft</span><span class="btn p" style="padding:10px 28px">Next</span></div></div>
+  <div style="width:270px;background:var(--soft);padding:18px"><div class="muted small" style="margin-bottom:8px">LIVE PREVIEW</div>${hcard("₹1.1 Cr", "3 bed · 3 Canal Rd", "p1")}<div class="card small" style="margin-top:12px">✅ 4 photos<br>✅ Map pin set<br>⬜ Description 40+ words</div></div></div>`, "Desktop · post a listing with live preview")}
+${browser("nestmap.app/settings", `${dh}<div style="display:flex;height:440px"><div style="width:210px;padding:16px;border-right:1px solid var(--line)">${["Profile","Alerts","Privacy & data","Language","Billing","Help & support"].map((s, i) => `<div style="padding:9px 10px;border-radius:8px;${i === 0 ? "background:var(--soft);font-weight:700" : ""}">${s}</div>`).join("")}</div>
+  <div style="flex:1;padding:22px 28px"><div class="title">Profile</div><div class="row" style="margin:12px 0"><div class="av" style="width:64px;height:64px;font-size:24px">A</div><span class="btn g" style="padding:8px 14px">Change photo</span></div><div class="row"><div class="field" style="flex:1"><small>Name</small>Aghil</div><div class="field" style="flex:1"><small>City</small>Kozhikode</div></div><div class="row"><div class="field" style="flex:1"><small>Phone</small>+91 98•••• 1234 <span class="st ok">Verified</span></div><div class="field" style="flex:1"><small>Email</small>aghil@example.com</div></div><span class="btn p" style="margin-top:14px;display:inline-block;padding:10px 24px">Save changes</span></div></div>`, "Desktop · settings with side menu")}
+</div>`);
+
+/* ============ PWA & APP STATES ============ */
+out.push(sec("PWA & app states", "What the installed app and the website show for install, permissions, updates and blocked accounts.", [
+  phone("Install prompt", "Android and desktop Chrome", `${mapBase}<div class="search">🔍&nbsp;Search area or city</div><div class="sheet" style="bottom:0"><div class="grab"></div><div class="row"><div style="width:52px;height:52px;border-radius:14px;background:var(--accent);display:grid;place-items:center;color:#fff;font-weight:800;font-size:22px">N</div><div><b>Install Nestmap</b><div class="muted small">Faster, works offline for saved homes</div></div></div><div class="row" style="margin-top:14px"><div class="btn g" style="flex:1">Not now</div><div class="btn p" style="flex:1">Install</div></div></div>`),
+  phone("Install on iPhone", "Safari needs manual steps", `${mapBase}<div class="dim"></div><div class="sheet" style="bottom:70px"><div class="grab"></div><b>Add Nestmap to your Home Screen</b><div class="radio" style="border:0"><i></i><span>Tap <b>Share ⬆</b> in the toolbar</span></div><div class="radio"><i></i><span>Choose <b>Add to Home Screen</b></span></div><div class="muted small">Needed for push alerts on iPhone.</div></div><div style="left:0;right:0;bottom:0;height:60px;background:#f2f2f7;display:flex;justify-content:space-around;align-items:center;font-size:20px">‹ › <b style="color:#007aff">⬆</b> ▢ ⧉</div>`),
+  phone("Push permission", "Ask after value is clear", `${mapBase}<div class="dim"></div><div class="sheet"><div class="grab"></div><div class="c"><div class="big-ico" style="width:72px;height:72px;font-size:30px">🔔</div><div class="title">Never miss a price drop</div><div class="muted" style="margin:6px 0 16px">Get alerts for new matches, replies and visit reminders.</div></div><div class="btn p">Turn on alerts</div><div class="muted small c" style="margin-top:12px">Not now</div></div>`),
+  phone("Splash", "Installed app launch", `<div class="fill" style="background:var(--accent)"></div>${status}<div style="left:0;right:0;top:230px" class="c"><div style="width:84px;height:84px;border-radius:22px;background:#fff;margin:0 auto;display:grid;place-items:center"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#0f766e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z"/><path d="M9 11l3-2.5 3 2.5v3H9z" fill="#0f766e"/></svg></div><div style="color:#fff;font-size:26px;font-weight:800;margin-top:14px">Nestmap</div><div style="color:#b7e4de">Homes on a map</div></div>`),
+  phone("Update available", "Soft prompt, or forced if critical", `${mapBase}<div class="search" style="top:100px">🔍&nbsp;Search area or city</div><div style="left:12px;right:12px;top:44px;background:#14161a;color:#fff;border-radius:14px;padding:10px 14px;font-size:13px" class="row sp"><span>✨ New version ready</span><b style="color:#2dd4bf">Refresh</b></div>`),
+  phone("Maintenance", "Planned downtime", full(`<div style="left:24px;right:24px;top:150px" class="c"><div class="big-ico">🛠</div><div class="title">Back in a few minutes</div><div class="muted" style="margin:8px 0 18px">We're making Nestmap better. Expected back by 2:30 am.</div><div class="btn g">Saved homes (offline)</div><div class="muted small" style="margin-top:14px">status.nestmap.app</div></div>`)),
+  phone("Account suspended", "Clear reason and appeal", full(`<div style="left:24px;right:24px;top:120px" class="c"><div class="big-ico" style="background:#fee2e2">⛔</div><div class="title">Account suspended</div><div class="muted" style="margin:8px 0 14px">Your account was suspended on 12 Oct for posting listings with photos that weren't yours.</div></div><div style="left:24px;right:24px;top:360px"><div class="card small">Your listings are hidden. Your saved homes and messages are kept.</div><div class="btn p" style="margin-top:14px">Appeal this decision</div><div class="btn g" style="margin-top:8px">Contact support</div></div>`)),
+]));
+
+/* ============ ACCOUNT & HELP ============ */
+out.push(sec("Account & help", "Edit your profile, and get help that creates a support ticket for the team.", [
+  phone("Edit profile", "Photo, name, contact", page("Profile", `<div class="row sp" style="margin:6px 0"><span>‹</span><b>Edit profile</b><span class="muted small">Save</span></div><div class="c" style="margin:6px 0"><div class="av" style="width:72px;height:72px;font-size:28px;margin:0 auto">A</div><div class="small" style="color:var(--accent);margin-top:6px">Change photo</div></div>
+    <div class="field"><small>Name</small>Aghil</div><div class="field"><small>Phone</small>+91 98•••• 1234 <span class="st ok" style="float:right">Verified</span></div><div class="field"><small>Email (optional)</small>aghil@example.com</div><div class="field"><small>City</small>Kozhikode ▾</div><div class="field"><small>I am a</small><span class="chip on">Buyer</span><span class="chip">Owner</span><span class="chip">Agent</span></div><div class="muted small" style="margin-top:10px">Changing your phone number needs a new OTP.</div>`)),
+  phone("Help & support", "FAQ first, then contact us", page("Profile", `<div class="title" style="margin:6px 0">How can we help?</div><div class="field" style="margin-top:0">🔍 Search help</div>
+    <div class="stats" style="grid-template-columns:repeat(2,1fr)"><div>🏠<b style="font-size:13px">Buying &amp; renting</b></div><div>📝<b style="font-size:13px">Posting a listing</b></div><div>💳<b style="font-size:13px">Payments</b></div><div>🔒<b style="font-size:13px">Account &amp; privacy</b></div></div>
+    <div class="title" style="font-size:15px;margin:14px 0 2px">Popular</div><div class="nb"><span>How long does review take?</span><span>›</span></div><div class="nb"><span>How do I mark my home as rented?</span><span>›</span></div><div class="nb"><span>Is my phone number visible?</span><span>›</span></div>
+    <div class="btn p" style="margin-top:12px">Contact support</div><div class="muted small c" style="margin-top:8px">My tickets · 1 open</div>`)),
+  phone("Contact support", "Creates a ticket", full(`<div style="left:16px;right:16px;top:44px"><div class="row"><span>‹</span><b>Contact support</b></div><div class="field"><small>Topic</small>Posting a listing ▾</div><div class="field"><small>Related listing (optional)</small>19 Garden Ln ▾</div><div class="field" style="height:100px"><small>What happened?</small>I can't upload more than 3 photos…</div><div class="row" style="margin-top:10px"><div class="ph" style="width:64px;height:64px;${img("sc1")}"></div><div class="ph" style="width:64px;height:64px;display:grid;place-items:center;border:1.5px dashed #9ca3af;background:#f9fafb">＋</div></div><div class="muted small" style="margin-top:10px">We usually reply within 4 hours.</div></div><div style="left:16px;right:16px;bottom:16px" class="btn p">Send</div>`)),
+  phone("Ticket thread", "Status and replies", full(`<div style="left:16px;right:16px;top:44px"><div class="row sp"><span>‹</span><b>Ticket #1042</b><span class="st wr">In progress</span></div><div class="muted small" style="margin:6px 0">Can't upload photos · opened 2h ago</div><div class="bub me">I can't upload more than 3 photos.</div><div class="bub">Hi Aghil, thanks for reporting. Can you tell us the photo size?</div><div class="bub" style="background:#e3f2f0">We've also raised the limit to 10 photos for your account.</div></div><div style="left:12px;right:12px;bottom:14px" class="row"><div class="field" style="flex:1;margin:0;border-radius:999px">Reply…</div><div class="av" style="width:42px;height:42px">➤</div></div>`)),
+]));
+
+document.getElementById("more").innerHTML = out.join("");
+</script>
+</body>
+</html>

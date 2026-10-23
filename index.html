@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff" id="themeColor">
+<title>Nestmap</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icons/favicon.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Nestmap">
+<meta name="description" content="Find homes on a map. Buy, rent, no noise.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+  :root {
+    --bg: #ffffff; --bg2: #f3f5f8; --fg: #0b1220; --muted: #5b6678; --line: rgba(15,23,42,.09);
+    --accent: #0d9488; --accent-fg: #ffffff; --glass: rgba(255,255,255,.78); --danger: #ef4444; --ok: #15803d;
+    --shadow-s: 0 1px 2px rgba(15,23,42,.08), 0 2px 8px rgba(15,23,42,.06);
+    --shadow-m: 0 10px 34px rgba(15,23,42,.16), 0 2px 6px rgba(15,23,42,.06);
+    --nav-w: 76px;
+  }
+  :root[data-theme="dark"] {
+    --bg: #10141a; --bg2: #171c24; --fg: #eef2f6; --muted: #97a3b4; --line: rgba(255,255,255,.1);
+    --accent: #2dd4bf; --accent-fg: #052a26; --glass: rgba(22,27,34,.74); --ok: #4ade80;
+    --shadow-s: 0 1px 2px rgba(0,0,0,.4), 0 2px 8px rgba(0,0,0,.3); --shadow-m: 0 10px 34px rgba(0,0,0,.55), 0 2px 6px rgba(0,0,0,.3);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #10141a; --bg2: #171c24; --fg: #eef2f6; --muted: #97a3b4; --line: rgba(255,255,255,.1);
+      --accent: #2dd4bf; --accent-fg: #052a26; --glass: rgba(22,27,34,.74); --ok: #4ade80;
+      --shadow-s: 0 1px 2px rgba(0,0,0,.4), 0 2px 8px rgba(0,0,0,.3); --shadow-m: 0 10px 34px rgba(0,0,0,.55), 0 2px 6px rgba(0,0,0,.3);
+    }
+  }
+  * { box-sizing: border-box; margin: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; }
+  body { font: 15px/1.45 "Inter", system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--fg); background: var(--bg); letter-spacing: -.005em;
+         -webkit-font-smoothing: antialiased; font-feature-settings: "cv11", "ss01"; }
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; letter-spacing: inherit; }
+  svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  .glass { background: var(--glass); -webkit-backdrop-filter: blur(22px) saturate(1.6); backdrop-filter: blur(22px) saturate(1.6); border: 1px solid var(--line); }
+
+  /* map */
+  #map { position: fixed; inset: 0; z-index: 0; background: var(--bg2); }
+  .leaflet-tile-pane { filter: saturate(.6) contrast(.96) brightness(1.04); }
+  body.darkmap .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) saturate(.5) brightness(.82) contrast(.95); }
+  .leaflet-control-zoom, .leaflet-control-attribution { display: none; }
+
+  /* top: search + filter */
+  .top { position: fixed; z-index: 500; top: calc(env(safe-area-inset-top) + 12px); left: 12px; right: 12px; display: flex; gap: 10px; max-width: 540px; }
+  .search { flex: 1; display: flex; align-items: center; gap: 10px; height: 52px; padding: 0 18px; border-radius: 999px; box-shadow: var(--shadow-m); }
+  .search svg { width: 20px; height: 20px; color: var(--muted); }
+  .search input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; font: inherit; color: var(--fg); font-size: 15px; }
+  .search input::placeholder { color: var(--muted); }
+  .fbtn { position: relative; width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; box-shadow: var(--shadow-m); }
+  .fbtn svg { width: 21px; height: 21px; }
+  .fbtn .dot { position: absolute; top: 11px; right: 12px; width: 9px; height: 9px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg); display: none; }
+  .fbtn.on .dot { display: block; }
+
+  /* Buy / Rent, then sub-type */
+  .modebar { position: fixed; z-index: 500; top: calc(env(safe-area-inset-top) + 74px); left: 12px; }
+  .mode { display: flex; flex-direction: column; gap: 2px; padding: 4px; border-radius: 22px; box-shadow: var(--shadow-m); }
+  .mode button { display: flex; align-items: center; gap: 9px; padding: 9px 16px 9px 12px; border-radius: 18px; font-weight: 600; font-size: 13.5px; color: var(--muted); text-align: left; line-height: 1.2; transition: .15s; }
+  .mode button svg { width: 18px; height: 18px; }
+  .mode button.on { background: var(--accent); color: var(--accent-fg); box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 38%, transparent); }
+  .mode small { display: block; font-size: 11px; font-weight: 500; opacity: .85; } .mode small:empty { display: none; }
+  .types { position: absolute; left: calc(100% + 8px); top: 0; display: none; min-width: 178px; padding: 6px; border-radius: 20px; box-shadow: var(--shadow-m); }
+  .types.open { display: block; animation: pop .16s ease; }
+  @keyframes pop { from { opacity: 0; transform: translateX(-6px) scale(.97); } to { opacity: 1; transform: none; } }
+  .types button { display: flex; align-items: center; gap: 11px; width: 100%; padding: 10px 12px; border-radius: 14px; font-weight: 600; font-size: 14px; text-align: left; }
+  .types button svg { width: 19px; height: 19px; color: var(--muted); }
+  .types button:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .types button.on, .types button.on svg { color: var(--accent); } .types button.all { color: var(--muted); }
+
+  /* floating controls */
+  .listbtn { position: fixed; z-index: 500; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom) + 92px); display: flex; align-items: center; gap: 8px;
+             padding: 12px 20px; border-radius: 999px; background: var(--fg); color: var(--bg); font-weight: 600; font-size: 14px; box-shadow: var(--shadow-m); }
+  .listbtn svg { width: 18px; height: 18px; }
+  .locate { position: fixed; z-index: 500; right: 12px; bottom: calc(env(safe-area-inset-bottom) + 92px); width: 50px; height: 50px; border-radius: 50%; display: grid; place-items: center; box-shadow: var(--shadow-m); }
+  .locate svg { width: 21px; height: 21px; }
+
+  /* nav */
+  .nav { position: fixed; z-index: 540; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom) + 12px); width: min(420px, calc(100% - 24px));
+         display: flex; align-items: center; justify-content: space-between; padding: 6px; border-radius: 28px; box-shadow: var(--shadow-m); }
+  .nav button { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 0 7px; border-radius: 20px; font-size: 10.5px; font-weight: 600; color: var(--muted); transition: color .15s; }
+  .nav button svg { width: 22px; height: 22px; }
+  .nav button.on { color: var(--accent); }
+  .nav button.on svg { stroke-width: 2.3; }
+  .nav .post { flex: 0 0 54px; height: 54px; padding: 0; justify-content: center; border-radius: 19px; background: var(--accent); color: var(--accent-fg); box-shadow: 0 6px 16px color-mix(in srgb, var(--accent) 45%, transparent); }
+  .nav .post.on { color: var(--accent-fg); } .nav .post span { display: none; }
+  .nav .brandmark { display: none; }
+  .bdg { position: absolute; top: 3px; left: calc(50% + 4px); min-width: 17px; height: 17px; border-radius: 9px; background: var(--danger); color: #fff; font: 700 10px/17px Inter, sans-serif; text-align: center; padding: 0 4px; font-style: normal; }
+  .bdg[hidden] { display: none; }
+
+  /* pins */
+  .leaflet-div-icon.pinwrap, .pinwrap { background: none; border: 0; }
+  .pin { position: relative; width: max-content; padding: 5px 10px; border-radius: 999px; font-weight: 650; font-size: 12.5px; font-feature-settings: "tnum";
+         background: var(--bg); color: var(--fg); border: 1px solid var(--line); box-shadow: var(--shadow-s); white-space: nowrap;
+         transform: translate(-50%, calc(-100% - 6px)); transition: transform .15s, background .15s, color .15s; }
+  .pin::after { content: ""; position: absolute; left: 50%; bottom: -4.5px; width: 8px; height: 8px; background: inherit; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);
+                transform: translateX(-50%) rotate(45deg); border-radius: 0 0 3px 0; }
+  .pin:hover { transform: translate(-50%, calc(-100% - 8px)) scale(1.06); }
+  .pin.sel { background: var(--fg); color: var(--bg); border-color: var(--fg); transform: translate(-50%, calc(-100% - 8px)) scale(1.1); z-index: 999 !important; }
+  .pin.dot { width: 13px; height: 13px; padding: 0; font-size: 0; background: var(--accent); border: 2.5px solid #fff; box-shadow: 0 0 0 1px rgba(15,23,42,.16), 0 2px 6px rgba(15,23,42,.3); transform: translate(-50%, -50%); }
+  .pin.dot::after { display: none; } .pin.dot:hover { transform: translate(-50%, -50%) scale(1.25); }
+  .pin.dot.sel { width: 19px; height: 19px; background: var(--fg); transform: translate(-50%, -50%); }
+
+  /* sheets */
+  .sheet { position: fixed; z-index: 600; left: 0; right: 0; bottom: 0; margin: 0 auto; max-width: 560px; background: var(--bg); border-radius: 28px 28px 0 0; box-shadow: var(--shadow-m);
+           transform: translateY(105%); transition: transform .28s cubic-bezier(.2,.8,.2,1); padding: 8px 18px max(18px, env(safe-area-inset-bottom)); }
+  .sheet.open { transform: none; }
+  .grab { width: 40px; height: 4px; border-radius: 2px; background: var(--line); margin: 0 auto 14px; }
+  .sh { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; } .sh h2 { font-size: 19px; font-weight: 700; letter-spacing: -.02em; }
+  .x { width: 34px; height: 34px; border-radius: 50%; background: var(--bg2); display: grid; place-items: center; } .x svg { width: 17px; height: 17px; }
+  .scrim { position: fixed; inset: 0; z-index: 560; background: rgba(8,12,20,.38); opacity: 0; pointer-events: none; transition: opacity .2s; }
+  .scrim.on { opacity: 1; pointer-events: auto; }
+
+  .media { position: relative; border-radius: 20px; overflow: hidden; background: var(--bg2); aspect-ratio: 4 / 3; }
+  .media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  #cardSheet .media { aspect-ratio: 16 / 9; }
+  .hbtn { position: absolute; top: 10px; right: 10px; width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,.92); color: #0b1220; display: grid; place-items: center; box-shadow: var(--shadow-s); }
+  .hbtn svg { width: 19px; height: 19px; } .hbtn.on svg, .round.on svg { fill: var(--danger); stroke: var(--danger); }
+  .badge { position: absolute; left: 10px; top: 10px; display: flex; gap: 6px; }
+  .b { display: inline-flex; align-items: center; gap: 4px; padding: 4px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 600; background: rgba(255,255,255,.92); color: #0b1220; }
+  .b svg { width: 13px; height: 13px; color: #0d9488; }
+  .price { font-size: 24px; font-weight: 750; letter-spacing: -.025em; font-feature-settings: "tnum"; } .price small { font-size: 13px; font-weight: 500; color: var(--muted); margin-left: 2px; }
+  .meta { color: var(--muted); font-size: 13.5px; } .addr { font-size: 14px; font-weight: 500; }
+  .row { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; } .row + .meta { margin-top: 2px; }
+  .pill { font-size: 12px; font-weight: 600; padding: 4px 11px; border-radius: 999px; background: var(--bg2); color: var(--muted); }
+  .cta { display: flex; gap: 10px; margin-top: 16px; }
+  .btn { flex: 1; padding: 14px; border-radius: 16px; font-weight: 650; text-align: center; font-size: 14.5px; transition: .15s; }
+  .btn.primary { background: var(--accent); color: var(--accent-fg); box-shadow: 0 6px 16px color-mix(in srgb, var(--accent) 35%, transparent); }
+  .btn.ghost { background: var(--bg2); } .btn.icon { flex: 0 0 52px; display: grid; place-items: center; padding: 0; } .btn.icon svg { width: 20px; height: 20px; }
+  .btn:active { transform: scale(.98); }
+
+  #listSheet { max-height: 74vh; display: flex; flex-direction: column; }
+  .items { overflow: auto; margin: 0 -6px; padding: 0 6px; }
+  .item { display: flex; gap: 14px; padding: 12px 0; width: 100%; text-align: left; border-top: 1px solid var(--line); align-items: center; }
+  .item img { width: 92px; height: 72px; object-fit: cover; border-radius: 14px; background: var(--bg2); flex: none; }
+  .item b { display: block; font-size: 16px; font-weight: 700; font-feature-settings: "tnum"; } .item span { color: var(--muted); font-size: 13px; line-height: 1.4; display: block; }
+
+  .field { margin-bottom: 22px; } .field label { display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 12px; font-size: 14px; } .field label output { color: var(--accent); font-weight: 700; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .chips { display: flex; gap: 8px; } .chip { flex: 1; padding: 11px 0; border-radius: 14px; font-weight: 600; background: var(--bg2); transition: .15s; }
+  .chip.on { background: var(--accent); color: var(--accent-fg); }
+
+  /* full pages from the nav */
+  .view { position: fixed; z-index: 530; inset: 0; background: var(--bg); overflow-y: auto; display: none; padding: calc(env(safe-area-inset-top) + 22px) 18px 120px; }
+  .view.open { display: block; animation: rise .22s ease; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .vw { max-width: 880px; margin: 0 auto; }
+  .vw h1 { font-size: 30px; font-weight: 750; letter-spacing: -.03em; } .vw .sub { color: var(--muted); margin: 4px 0 22px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; }
+  .pc { cursor: pointer; } .pc .pbody { padding: 12px 2px 0; } .pc .price { font-size: 19px; } .pc .type { position: absolute; left: 10px; bottom: 10px; padding: 4px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 600; background: rgba(11,18,32,.72); color: #fff; }
+  .empty { text-align: center; padding: 64px 20px; color: var(--muted); } .empty .ei { width: 76px; height: 76px; border-radius: 50%; background: var(--bg2); display: grid; place-items: center; margin: 0 auto 16px; color: var(--accent); }
+  .empty .ei svg { width: 32px; height: 32px; } .empty h3 { color: var(--fg); font-size: 18px; margin-bottom: 6px; }
+  .list { background: var(--bg); border: 1px solid var(--line); border-radius: 22px; overflow: hidden; }
+  .li { display: flex; align-items: center; gap: 14px; padding: 15px 16px; width: 100%; text-align: left; border-top: 1px solid var(--line); } .li:first-child { border: 0; }
+  .li .ic { width: 38px; height: 38px; border-radius: 12px; background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); display: grid; place-items: center; flex: none; } .li .ic svg { width: 19px; height: 19px; }
+  .li > svg { width: 17px; height: 17px; color: var(--muted); opacity: .7; }
+  .li .tx { flex: 1; min-width: 0; } .li b { display: block; font-weight: 600; } .li small { color: var(--muted); font-size: 13px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .av { width: 46px; height: 46px; border-radius: 50%; background: var(--accent); color: var(--accent-fg); display: grid; place-items: center; font-weight: 700; flex: none; }
+  .unread { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); }
+  .hero { border-radius: 26px; padding: 26px 22px; color: #fff; background: radial-gradient(120% 140% at 0% 0%, #14b8a6 0%, #0f766e 55%, #134e4a 100%); margin-bottom: 18px; }
+  .hero h2 { font-size: 26px; letter-spacing: -.03em; line-height: 1.15; margin-bottom: 8px; } .hero p { opacity: .85; margin-bottom: 18px; max-width: 420px; }
+  .hero .btn { background: #fff; color: #0f766e; flex: none; display: inline-block; padding: 12px 22px; }
+  .steps { display: grid; gap: 12px; margin-bottom: 18px; } .step { display: flex; gap: 14px; align-items: center; padding: 16px; border: 1px solid var(--line); border-radius: 20px; } .step i { width: 34px; height: 34px; border-radius: 50%; background: var(--bg2); display: grid; place-items: center; font-style: normal; font-weight: 700; flex: none; }
+  .login { padding: 20px; border: 1px solid var(--line); border-radius: 24px; margin-bottom: 18px; } .login .phone { display: flex; gap: 10px; margin-top: 14px; }
+  .login .who { display: flex; align-items: center; gap: 14px; } .login .who .av { width: 52px; height: 52px; background: var(--bg2); color: var(--muted); } .login .who .av svg { width: 24px; height: 24px; }
+  .login .who b { font-size: 17px; display: block; }
+  .login input { flex: 1; min-width: 0; padding: 14px 16px; border-radius: 16px; border: 1px solid var(--line); background: var(--bg2); font: inherit; color: var(--fg); outline: none; } .login input:focus { border-color: var(--accent); }
+  .login .btn { flex: none; padding: 14px 20px; }
+  .seg { display: flex; background: var(--bg2); border-radius: 14px; padding: 3px; } .seg button { padding: 7px 14px; border-radius: 11px; font-size: 13px; font-weight: 600; color: var(--muted); } .seg button.on { background: var(--bg); color: var(--fg); box-shadow: var(--shadow-s); }
+
+  /* detail */
+  #detail { position: fixed; inset: 0; z-index: 900; background: var(--bg); overflow-y: auto; transform: translateY(100%); transition: transform .32s cubic-bezier(.2,.8,.2,1); }
+  #detail.open { transform: none; }
+  .dwrap { max-width: 720px; margin: 0 auto; padding-bottom: 110px; }
+  .gal { position: relative; } .gscroll { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  .gscroll::-webkit-scrollbar { display: none; }
+  .gscroll img { flex: 0 0 100%; width: 100%; height: min(380px, 56vw); min-height: 280px; object-fit: cover; scroll-snap-align: center; background: var(--bg2); }
+  .round { position: absolute; top: calc(env(safe-area-inset-top) + 14px); width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,.92); color: #0b1220; display: grid; place-items: center; box-shadow: var(--shadow-s); }
+  .round svg { width: 20px; height: 20px; } .round.back { left: 14px; } .round.heart { right: 14px; } .round.share { right: 66px; }
+  .counter { position: absolute; right: 14px; bottom: 14px; background: rgba(11,18,32,.6); color: #fff; font-size: 12px; font-weight: 600; padding: 4px 11px; border-radius: 999px; }
+  .dbody { padding: 20px 20px 0; position: relative; border-radius: 28px 28px 0 0; background: var(--bg); margin-top: -22px; }
+  .tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .tag { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 650; padding: 4px 11px; border-radius: 999px; background: color-mix(in srgb, var(--accent) 13%, transparent); color: var(--accent); }
+  .tag.ok { background: color-mix(in srgb, var(--ok) 13%, transparent); color: var(--ok); } .tag svg { width: 13px; height: 13px; }
+  .big { font-size: 32px; font-weight: 780; letter-spacing: -.035em; font-feature-settings: "tnum"; } .big small { font-size: 15px; font-weight: 500; color: var(--muted); }
+  .facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0 6px; }
+  .fact { background: var(--bg2); border-radius: 18px; padding: 14px 10px; text-align: center; } .fact b { display: block; font-size: 18px; font-weight: 700; } .fact span { color: var(--muted); font-size: 12px; }
+  .dbody h3 { font-size: 16px; font-weight: 700; margin: 26px 0 10px; letter-spacing: -.01em; } .dbody p { color: var(--muted); line-height: 1.65; }
+  .ams { display: flex; flex-wrap: wrap; gap: 8px; } .ams span { background: var(--bg2); border-radius: 999px; padding: 8px 14px; font-size: 13px; font-weight: 500; }
+  .agent { display: flex; align-items: center; gap: 14px; padding: 16px; border: 1px solid var(--line); border-radius: 20px; }
+  .agent small { color: var(--muted); display: block; font-size: 13px; }
+  .dbar { position: fixed; z-index: 910; left: 0; right: 0; bottom: 0; padding: 12px 16px max(14px, env(safe-area-inset-bottom)); display: none; border-width: 1px 0 0; }
+  #detail.open ~ .dbar { display: block; }
+  .dbar .in { max-width: 720px; margin: 0 auto; display: flex; gap: 10px; align-items: center; } .dbar .dp { font-weight: 750; font-size: 18px; letter-spacing: -.02em; } .dbar .dm { font-size: 12px; color: var(--muted); } .dbar .in > div { flex: 1; }
+  .dbar .btn { flex: 0 0 auto; padding: 13px 22px; }
+
+  .toast { position: fixed; z-index: 1000; left: 50%; top: calc(env(safe-area-inset-top) + 84px); transform: translate(-50%, -12px); padding: 11px 18px; border-radius: 999px; font-size: 13.5px; font-weight: 600; box-shadow: var(--shadow-m); opacity: 0; pointer-events: none; transition: .22s; }
+  .toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+  /* tablet + desktop: left rail, floating panels */
+  @media (min-width: 900px) {
+    .top { left: calc(var(--nav-w) + 16px); } .modebar { left: calc(var(--nav-w) + 16px); top: calc(env(safe-area-inset-top) + 78px); }
+    .nav { left: 0; top: 0; bottom: 0; transform: none; width: var(--nav-w); flex-direction: column; justify-content: flex-start; gap: 6px; padding: 16px 8px; border-radius: 0; border-width: 0 1px 0 0; box-shadow: none; }
+    .nav .brandmark { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 14px; margin: 0 auto 14px; background: var(--fg); color: var(--bg); font-weight: 800; font-size: 18px; letter-spacing: -.04em; }
+    .nav button { flex: none; width: 100%; padding: 10px 0 8px; } .nav .post { width: 54px; align-self: center; margin: 6px 0; } .nav .post span { display: none; }
+    .nav .prof { margin-top: auto; } .bdg { left: calc(50% + 6px); top: 4px; }
+    .listbtn { bottom: 24px; left: calc(50% + var(--nav-w) / 2); } .locate { bottom: 24px; right: 20px; }
+    .view { left: var(--nav-w); padding-bottom: 60px; }
+    .sheet { left: calc(var(--nav-w) + 16px); right: auto; bottom: 16px; width: 410px; max-width: none; margin: 0; border-radius: 28px; transform: translateY(130%); padding-bottom: 20px; }
+    .sheet.open { transform: none; }
+    .scrim.on { background: transparent; pointer-events: none; }
+  }
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<div class="top">
+  <label class="search glass">
+    <svg viewBox="0 0 24 24" data-i="search"></svg>
+    <input id="q" placeholder="Search area, city or landmark" autocomplete="off">
+  </label>
+  <button class="fbtn glass" id="fbtn" aria-label="Filters"><svg viewBox="0 0 24 24" data-i="sliders"></svg><i class="dot"></i></button>
+</div>
+
+<div class="modebar">
+  <div class="mode glass" id="mode">
+    <button data-m="buy" class="on"><svg viewBox="0 0 24 24" data-i="key"></svg><span>Buy<small></small></span></button>
+    <button data-m="rent"><svg viewBox="0 0 24 24" data-i="tag"></svg><span>Rent<small></small></span></button>
+  </div>
+  <div class="types glass" id="types"></div>
+</div>
+
+<button class="listbtn" id="listbtn"><svg viewBox="0 0 24 24" data-i="list"></svg><span id="listTxt">List · 0</span></button>
+<button class="locate glass" id="locate" aria-label="My location"><svg viewBox="0 0 24 24" data-i="locate"></svg></button>
+
+<nav class="nav glass" id="nav">
+  <div class="brandmark">N</div>
+  <button data-v="explore" class="on"><svg viewBox="0 0 24 24" data-i="map"></svg><span>Explore</span></button>
+  <button data-v="saved"><svg viewBox="0 0 24 24" data-i="heart"></svg><span>Saved</span><i class="bdg" id="bSaved" hidden></i></button>
+  <button data-v="post" class="post" aria-label="Post a property"><svg viewBox="0 0 24 24" data-i="plus"></svg><span>Post</span></button>
+  <button data-v="inbox"><svg viewBox="0 0 24 24" data-i="chat"></svg><span>Inbox</span><i class="bdg">2</i></button>
+  <button data-v="profile" class="prof"><svg viewBox="0 0 24 24" data-i="user"></svg><span>Profile</span></button>
+</nav>
+
+<div class="view" id="view"></div>
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="cardSheet"></div>
+
+<div class="sheet" id="listSheet">
+  <div class="grab"></div><div class="sh"><h2 id="listTitle"></h2><button class="x" onclick="closeAll()" aria-label="Close"><svg viewBox="0 0 24 24" data-i="x"></svg></button></div>
+  <div class="items" id="items"></div>
+</div>
+
+<div class="sheet" id="filterSheet">
+  <div class="grab"></div><div class="sh"><h2>Filters</h2><button class="x" onclick="closeAll()" aria-label="Close"><svg viewBox="0 0 24 24" data-i="x"></svg></button></div>
+  <div class="field"><label>Max price <output id="priceOut"></output></label><input type="range" id="price"></div>
+  <div class="field" id="bedsField"><label>Bedrooms</label>
+    <div class="chips" id="beds"><button class="chip on" data-v="0">Any</button><button class="chip" data-v="1">1+</button><button class="chip" data-v="2">2+</button><button class="chip" data-v="3">3+</button></div></div>
+  <div class="cta"><button class="btn ghost" id="reset">Reset</button><button class="btn primary" id="apply" style="flex:2">Show results</button></div>
+</div>
+
+<div id="detail"></div>
+<div class="dbar glass" id="dbar"><div class="in"><div><div class="dp" id="dbarPrice"></div><div class="dm">Verified agent · replies in ~1 hr</div></div>
+  <button class="btn ghost" onclick="toast('Chat opens here in the full app')">Message</button><button class="btn primary" onclick="toast('Calling through Nestmap keeps your number private')">Call</button></div></div>
+<div class="toast glass" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+/* ---------- icons ---------- */
+const I = {
+  search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>', sliders: '<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>',
+  locate: '<circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/>', map: '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>',
+  heart: '<path d="M12 21s-7-4.6-9.3-9A5.3 5.3 0 0 1 12 6.6 5.3 5.3 0 0 1 21.3 12C19 16.4 12 21 12 21z"/>', chat: '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>', user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>', list: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+  key: '<circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M16 7l3 3"/>', tag: '<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.2"/>',
+  building: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/>', home: '<path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-5h4v5"/>',
+  villa: '<path d="M2 12 12 4l10 8"/><path d="M4 11v9h16v-9"/><path d="M8 20v-6h3v6M14 14h3"/>', plot: '<path d="M12 3 7 11h3l-4 6h12l-4-6h3z"/><path d="M12 17v4"/>',
+  store: '<path d="M4 9 5.5 4h13L20 9"/><path d="M4 9a2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0"/><path d="M5 11v9h14v-9"/>', bed: '<path d="M3 18V7M3 14h18v4M21 14v-2a3 3 0 0 0-3-3h-7v5"/><circle cx="7" cy="11" r="1.5"/>',
+  grid: '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>',
+  back: '<path d="m15 6-6 6 6 6"/>', x: '<path d="M6 6l12 12M18 6 6 18"/>', share: '<path d="M12 15V3M8 7l4-4 4 4"/><path d="M5 12v7h14v-7"/>',
+  verified: '<path d="M12 3l2.5 2 3.2-.3 1 3 2.8 1.7-1 3 1 3-2.8 1.7-1 3-3.2-.3L12 21l-2.5-2-3.2.3-1-3-2.8-1.7 1-3-1-3 2.8-1.7 1-3 3.2.3z"/><path d="m9 12 2 2 4-4"/>',
+  bell: '<path d="M6 9a6 6 0 0 1 12 0c0 6 2 7 2 7H4s2-1 2-7zM10 20a2 2 0 0 0 4 0"/>', globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+  shield: '<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/>', help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 1-1 1.7M12 17h.01"/>',
+  moon: '<path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/>', chevron: '<path d="m9 6 6 6-6 6"/>', camera: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
+};
+const ic = n => `<svg viewBox="0 0 24 24">${I[n]}</svg>`;
+document.querySelectorAll("svg[data-i]").forEach(s => s.innerHTML = I[s.dataset.i]);
+
+/* ---------- sample data (swap for a real API later) ---------- */
+let CENTER = [11.2588, 75.7804]; // Kozhikode — replaced by your location if allowed
+const STREETS = ["Marina Rd","Lake View St","Park Ave","Temple St","Garden Lane","Beach Rd","Main St","Hill Rd","Canal Rd","Rose Ave"];
+const PT = [  // which property types exist for each mode
+  { k: "Apartment",   i: "building", m: ["buy", "rent"] }, { k: "House",       i: "home",  m: ["buy", "rent"] },
+  { k: "Villa",       i: "villa",    m: ["buy", "rent"] }, { k: "Plot",        i: "plot",  m: ["buy"] },
+  { k: "Commercial",  i: "store",    m: ["buy", "rent"] }, { k: "PG / Hostel", i: "bed",   m: ["rent"] },
+];
+const TYPES = PT.map(t => t.k), RES = ["Apartment", "House", "Villa"];
+let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+let props = [];
+const areas = [];   // centres already filled with demo listings
+// real building locations from OpenStreetMap so demo pins sit on land
+async function landNear(c) {
+  const q = `[out:json][timeout:20];way["building"](around:5000,${c[0]},${c[1]});out center 400;`;
+  for (const host of ["https://overpass.kumi.systems", "https://overpass-api.de"]) {
+    try {
+      const res = await fetch(host + "/api/interpreter?data=" + encodeURIComponent(q), { signal: AbortSignal.timeout(9000) });
+      if (!res.ok) continue;
+      const pts = (await res.json()).elements.filter(e => e.center).map(e => [e.center.lat, e.center.lon]);
+      if (pts.length) return pts;
+    } catch {}
+  }
+  return [];
+}
+// demo only: whenever the map shows a place we haven't filled yet (search, pan, locate), add homes there
+async function ensureArea(c) {
+  c = Array.isArray(c) ? c : [c.lat, c.lng];
+  if (map.getZoom() < 10 || areas.some(a => map.distance(a, c) < 7000)) return;
+  areas.push(c);   // claim it now so we don't fetch twice
+  const pts = await landNear(c);
+  props.push(...genArea(c, pts, props.length));
+  render();
+}
+function genArea(c, land, base) { seed = (Math.abs(Math.round(c[0] * 1000) * 7919 + Math.round(c[1] * 1000)) % 2147483646) + 1;
+  return Array.from({length: 120}, (_, k) => { const i = base + k;
+  const at = land.length ? land[Math.floor(rnd() * land.length)] : null;
+  const type = TYPES[Math.floor(rnd() * TYPES.length)];
+  let beds = 1 + Math.floor(rnd() * 4), baths = Math.max(1, beds - Math.floor(rnd() * 2)), sqft = 450 + beds * 350 + Math.floor(rnd() * 300);
+  let rent = Math.round(8 + beds * 7 + rnd() * 12) * 1000;       // monthly
+  let buy  = Math.round(35 + beds * 28 + rnd() * 60) * 100000;   // total
+  if (type === "Plot") { beds = baths = 0; sqft = 1500 + Math.floor(rnd() * 4500); rent = 0;
+    buy = Math.min(2e7, Math.max(2e6, Math.round(sqft * (900 + rnd() * 1500) / 1e5) * 1e5)); }
+  else if (type === "Commercial") { beds = 0; baths = 1; sqft = 400 + Math.floor(rnd() * 2600);
+    buy = Math.min(2e7, Math.round(sqft * (4000 + rnd() * 5000) / 1e5) * 1e5); rent = Math.min(1e5, Math.round(sqft * (40 + rnd() * 60) / 1000) * 1000); }
+  else if (type === "PG / Hostel") { beds = 1; baths = 1; sqft = 120 + Math.floor(rnd() * 180); rent = Math.round(5 + rnd() * 8) * 1000; buy = 0; }
+  return { id: i, lat: at ? at[0] : c[0] + (rnd() - .5) * .16, lng: at ? at[1] : c[1] + (rnd() - .5) * .16,
+    beds, baths, sqft, rent, buy, type,
+    addr: `${10 + Math.floor(rnd() * 90)}, ${STREETS[Math.floor(rnd() * STREETS.length)]}`,
+    img: `https://picsum.photos/seed/home${i}/600/450` };
+}); }
+
+/* ---------- how each property type is described ---------- */
+const DIR = ["East","West","North","South"], USE = ["Shop","Office","Showroom"], SHARE = ["Single","Double","Triple"];
+const spec = p => RES.includes(p.type) ? `${p.beds} bed · ${p.baths} bath · ${p.sqft} sqft`
+  : p.type === "Plot" ? `${p.sqft} sq ft plot · ${DIR[p.id % 4]} facing`
+  : p.type === "Commercial" ? `${p.sqft} sq ft · ${USE[p.id % 3]}`
+  : `${SHARE[p.id % 3]} sharing · ${p.id % 2 ? "Food included" : "No food"}`;
+const factsOf = p => RES.includes(p.type) ? [[p.beds, "Bedrooms"], [p.baths, "Bathrooms"], [p.sqft, "Sq ft"]]
+  : p.type === "Plot" ? [[p.sqft, "Sq ft"], ["Freehold", "Ownership"], [DIR[p.id % 4], "Facing"]]
+  : p.type === "Commercial" ? [[p.sqft, "Sq ft"], [USE[p.id % 3], "Use"], [["Ground","1st","2nd"][p.id % 3], "Floor"]]
+  : [[SHARE[p.id % 3], "Sharing"], [p.id % 2 ? "Included" : "Not incl.", "Meals"], [p.sqft, "Sq ft"]];
+const aboutOf = p => RES.includes(p.type) ? `A bright ${p.beds}-bedroom ${p.type.toLowerCase()} in a quiet, well-connected neighbourhood. Open living space, good ventilation and easy access to shops, schools and public transport.`
+  : p.type === "Plot" ? `A well-shaped ${p.sqft} sq ft plot with clear title and road access, ready for construction. Close to schools, markets and public transport.`
+  : p.type === "Commercial" ? `A ${p.sqft} sq ft ${USE[p.id % 3].toLowerCase()} space on a busy road with good footfall, parking nearby and 24h access.`
+  : `A clean, safe ${SHARE[p.id % 3].toLowerCase()}-sharing room close to colleges and offices, with Wi-Fi, laundry and 24h security.`;
+const AMEN = ["Covered parking","Lift","Gym","Garden","24h security","Power backup","Swimming pool","Balcony","Near school","Near bus stop"];
+const AMEN_BY = { "Plot": ["Clear title","Road access","Water connection","Near highway","Gated layout"],
+  "Commercial": ["Main road","Parking","Power backup","Lift","24h access"], "PG / Hostel": ["Wi-Fi","Laundry","24h security","Housekeeping","Near bus stop"] };
+const AGENTS = ["Anil Kumar","Fathima R.","Suresh Nair","Meera Das"];
+
+/* ---------- state + helpers ---------- */
+const S = { mode: "buy", type: null, maxPrice: null, beds: 0, selected: null };
+const RANGE = { buy: [2000000, 20000000, 500000], rent: [5000, 100000, 1000] };
+const fmt = (n, mode) => mode === "rent" ? "₹" + (n / 1000).toFixed(n % 1000 ? 1 : 0) + "k"
+  : n >= 1e7 ? "₹" + (n / 1e7).toFixed(2).replace(/\.?0+$/, "") + " Cr" : "₹" + (n / 1e5).toFixed(0) + " L";
+const price = p => S.mode === "rent" ? p.rent : p.buy;                       // for filtering and pins
+const pmode = p => price(p) > 0 ? S.mode : (S.mode === "rent" ? "buy" : "rent");  // for pages that can show any saved home
+const pr = p => pmode(p) === "rent" ? p.rent : p.buy;
+const prTxt = p => fmt(pr(p), pmode(p)) + (pmode(p) === "rent" ? "<small>/mo</small>" : "");
+const $ = id => document.getElementById(id);
+let saved = new Set(); try { saved = new Set(JSON.parse(localStorage.getItem("saved") || "[]")); } catch {}
+const heart = (id, cls) => `<button class="${cls} ${saved.has(id) ? "on" : ""}" data-hrt="${id}" onclick="toggleSave(${id}, event)" aria-label="Save">${ic("heart")}</button>`;
+let toastT; function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("on"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("on"), 2000); }
+
+/* ---------- map ---------- */
+const map = L.map("map", { zoomControl: false, center: CENTER, zoom: 12 });
+L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
+  { maxZoom: 19, attribution: "Tiles © Esri" }).addTo(map);
+const layer = L.layerGroup().addTo(map);
+
+function visible() {
+  return props.filter(p => price(p) > 0 && (!S.type || p.type === S.type)
+    && (!S.maxPrice || price(p) <= S.maxPrice) && p.beds >= S.beds);
+}
+function render() {
+  layer.clearLayers();
+  const list = visible();
+  list.forEach(p => {
+    const m = L.marker([p.lat, p.lng], { icon: L.divIcon({ className: "pinwrap", iconSize: [0, 0],
+      html: `<div class="pin ${S.selected === p.id ? "sel" : ""} ${map.getZoom() < 14 ? "dot" : ""}">${fmt(price(p), S.mode)}</div>` }) });
+    m.on("click", () => select(p.id));
+    m.addTo(layer);
+  });
+  const inView = list.filter(p => map.getBounds().contains([p.lat, p.lng]));
+  $("listTxt").textContent = `List · ${inView.length}`;
+  return inView;
+}
+
+/* ---------- pin preview card ---------- */
+function select(id) {
+  S.selected = id; const p = props[id]; render();
+  $("cardSheet").innerHTML = `<div class="grab"></div>
+    <div class="media" onclick="detail(${p.id})" style="cursor:pointer"><img src="${p.img}" alt="">
+      <div class="badge"><span class="b">${ic("verified")}Verified</span></div>${heart(p.id, "hbtn")}</div>
+    <div class="row"><span class="price">${prTxt(p)}</span><span class="pill">${p.type}</span></div>
+    <div class="meta">${spec(p)}</div><div class="addr">${p.addr}</div>
+    <div class="cta"><button class="btn ghost icon" onclick="closeAll()" aria-label="Close">${ic("x")}</button><button class="btn primary" onclick="detail(${p.id})">View details</button></div>`;
+  openSheet("cardSheet", false);
+  map.panTo([p.lat, p.lng], { animate: true });
+}
+
+/* ---------- sheets ---------- */
+const SHEETS = ["cardSheet", "listSheet", "filterSheet"];
+function openSheet(id, scrim = true) {
+  SHEETS.forEach(s => $(s).classList.toggle("open", s === id));
+  $("scrim").classList.toggle("on", scrim);
+}
+function closeAll() {
+  SHEETS.forEach(s => $(s).classList.remove("open"));
+  $("scrim").classList.remove("on"); closeTypes();
+  if (S.selected !== null) { S.selected = null; render(); }
+}
+$("scrim").onclick = closeAll;
+map.on("click", closeAll);
+map.on("moveend", () => { render(); ensureArea(map.getCenter()); });
+
+$("listbtn").onclick = () => {
+  const items = render().sort((a, b) => price(a) - price(b));
+  $("listTitle").textContent = `${items.length} ${items.length === 1 ? "property" : "properties"} in this area`;
+  $("items").innerHTML = items.map(p => `<button class="item" onclick="select(${p.id})">
+    <img src="${p.img}" alt=""><div><b>${fmt(price(p), S.mode)}${S.mode === "rent" ? "/mo" : ""}</b>
+    <span>${spec(p)}<br>${p.addr}</span></div></button>`).join("") || `<div class="empty"><h3>No properties here</h3>Try zooming out or clearing filters.</div>`;
+  openSheet("listSheet");
+};
+
+/* ---------- detail screen ---------- */
+function detail(id) {
+  const p = props[id], ag = AGENTS[id % AGENTS.length];
+  const ams = AMEN_BY[p.type] || [0,1,2,3,4].map(k => AMEN[(id * 3 + k * 2) % AMEN.length]);
+  const imgs = [0,1,2,3].map(k => `<img src="https://picsum.photos/seed/home${id}-${k}/900/650" alt="">`).join("");
+  $("detail").innerHTML = `<div class="dwrap">
+    <div class="gal"><div class="gscroll" id="gs">${imgs}</div>
+      <button class="round back" onclick="closeDetail()" aria-label="Back">${ic("back")}</button>
+      <button class="round share" onclick="toast('Link copied')" aria-label="Share">${ic("share")}</button>
+      ${heart(id, "round heart")}<span class="counter" id="cnt">1 / 4</span></div>
+    <div class="dbody">
+      <div class="tags"><span class="tag">${pmode(p) === "rent" ? "For rent" : "For sale"} · ${p.type}</span><span class="tag ok">${ic("verified")}Verified</span></div>
+      <div class="big">${fmt(pr(p), pmode(p))}${pmode(p) === "rent" ? " <small>/ month</small>" : ""}</div>
+      <div class="meta" style="margin-top:4px;font-size:15px">${p.addr}, Kozhikode</div>
+      <div class="facts">${factsOf(p).map(f => `<div class="fact"><b>${f[0]}</b><span>${f[1]}</span></div>`).join("")}</div>
+      <h3>About this property</h3><p>${aboutOf(p)}</p>
+      <h3>Highlights</h3><div class="ams">${ams.map(a => `<span>${a}</span>`).join("")}</div>
+      <h3>Listed by</h3>
+      <div class="agent"><div class="av">${ag[0]}</div><div style="flex:1"><b>${ag}</b><small>Verified agent · replies in ~1 hr</small></div><span class="tag ok" style="margin:0">${ic("verified")}</span></div>
+    </div></div>`;
+  $("dbarPrice").innerHTML = fmt(pr(p), pmode(p)) + (pmode(p) === "rent" ? "<small style='font-weight:500;color:var(--muted)'> /mo</small>" : "");
+  $("detail").scrollTop = 0; $("detail").classList.add("open");
+  const gs = $("gs"); gs.onscroll = () => $("cnt").textContent = `${Math.round(gs.scrollLeft / gs.clientWidth) + 1} / 4`;
+}
+function closeDetail() { $("detail").classList.remove("open"); }
+function toggleSave(id, ev) {
+  if (ev) ev.stopPropagation();
+  saved.has(id) ? saved.delete(id) : saved.add(id);
+  try { localStorage.setItem("saved", JSON.stringify([...saved])); } catch {}
+  document.querySelectorAll(`[data-hrt="${id}"]`).forEach(b => b.classList.toggle("on", saved.has(id)));
+  updateBadges(); toast(saved.has(id) ? "Saved to your list" : "Removed from saved");
+  if (curView === "saved") renderView();
+}
+function updateBadges() { const b = $("bSaved"); b.hidden = !saved.size; b.textContent = saved.size; }
+
+/* ---------- Buy / Rent, then sub-type (left side) ---------- */
+function setRange() {
+  const [min, max, step] = RANGE[S.mode], r = $("price");
+  r.min = min; r.max = max; r.step = step; r.value = S.maxPrice || max; syncOut();
+}
+function syncOut() { const v = +$("price").value; $("priceOut").textContent = v >= +$("price").max ? "Any" : fmt(v, S.mode); }
+$("price").oninput = syncOut;
+function applyChoice() {          // applies the current mode + type to the whole UI
+  [...$("mode").children].forEach(b => {
+    const on = b.dataset.m === S.mode; b.classList.toggle("on", on);
+    b.querySelector("small").textContent = on && S.type ? S.type : "";
+  });
+  if (S.type && !RES.includes(S.type)) {          // bedrooms only make sense for homes
+    S.beds = 0; [...$("beds").children].forEach((c, i) => c.classList.toggle("on", i === 0));
+  }
+  $("bedsField").hidden = !!S.type && !RES.includes(S.type);
+  S.maxPrice = null; setRange(); updateDot(); closeAll(); render();
+}
+function closeTypes() { $("types").classList.remove("open"); }
+function openTypes(btn) {
+  $("types").innerHTML = `<button class="all ${S.type ? "" : "on"}" data-t="">${ic("grid")}All types</button>` +
+    PT.filter(t => t.m.includes(S.mode)).map(t => `<button class="${S.type === t.k ? "on" : ""}" data-t="${t.k}">${ic(t.i)}${t.k}</button>`).join("");
+  $("types").style.top = btn.offsetTop + 4 + "px";
+  $("types").classList.add("open");
+}
+$("mode").onclick = e => {
+  const b = e.target.closest("button"); if (!b) return;
+  const m = b.dataset.m;
+  if (m === S.mode && $("types").classList.contains("open")) return closeTypes();
+  if (m !== S.mode) {
+    S.mode = m;
+    if (S.type && !PT.find(t => t.k === S.type).m.includes(m)) S.type = null;   // e.g. Plot has no rentals
+    applyChoice();
+  }
+  openTypes(b);
+};
+$("types").onclick = e => { const b = e.target.closest("button"); if (!b) return; S.type = b.dataset.t || null; applyChoice(); };
+
+/* ---------- filters ---------- */
+$("fbtn").onclick = () => { setRange(); openSheet("filterSheet"); };
+$("beds").onclick = e => {
+  if (!e.target.dataset.v) return;
+  [...$("beds").children].forEach(c => c.classList.toggle("on", c === e.target));
+};
+$("apply").onclick = () => {
+  const v = +$("price").value;
+  S.maxPrice = v >= +$("price").max ? null : v;
+  S.beds = +document.querySelector("#beds .on").dataset.v;
+  updateDot(); closeAll(); render();
+};
+$("reset").onclick = () => {
+  S.maxPrice = null; S.beds = 0; setRange();
+  [...$("beds").children].forEach((c, i) => c.classList.toggle("on", i === 0));
+  updateDot(); render();
+};
+function updateDot() { $("fbtn").classList.toggle("on", !!S.maxPrice || S.beds > 0); }
+
+/* ---------- nav pages: Saved · Post · Inbox · Profile ---------- */
+let curView = "explore";
+const pc = p => `<article class="pc" onclick="detail(${p.id})"><div class="media"><img loading="lazy" src="${p.img}" alt="">${heart(p.id, "hbtn")}<span class="type">${p.type}</span></div>
+  <div class="pbody"><div class="price">${prTxt(p)}</div><div class="meta">${spec(p)}</div><div class="addr">${p.addr}</div></div></article>`;
+const VIEWS = {
+  saved: () => {
+    const list = props.filter(p => saved.has(p.id));
+    return `<div class="vw"><h1>Saved</h1><div class="sub">${list.length ? `${list.length} ${list.length === 1 ? "property" : "properties"} you've saved` : "Your shortlist lives here"}</div>` +
+      (list.length ? `<div class="grid">${list.map(pc).join("")}</div>`
+        : `<div class="empty"><div class="ei">${ic("heart")}</div><h3>Nothing saved yet</h3>Tap the heart on any property to keep it here.</div>`) + `</div>`;
+  },
+  inbox: () => `<div class="vw"><h1>Inbox</h1><div class="sub">Conversations with agents and owners</div><div class="list">` +
+    [["Anil Kumar", "24 Beach Rd", "Yes, available Saturday 11am?", "5m", 1], ["Fathima R.", "12 Lake View St", "Parking for 2 cars.", "2h", 1], ["Joseph (owner)", "3 Canal Rd", "Thanks for your interest!", "1d", 0]]
+      .map(c => `<button class="li" onclick="toast('Chat opens here in the full app')"><div class="av">${c[0][0]}</div><div class="tx"><b>${c[0]}</b><small>${c[1]} · ${c[2]}</small></div><span class="meta">${c[3]}</span>${c[4] ? '<i class="unread"></i>' : ""}</button>`).join("") + `</div></div>`,
+  post: () => `<div class="vw"><h1>Post a property</h1><div class="sub">Reach buyers and renters near you</div>
+    <div class="hero"><h2>List your property in 3 minutes</h2><p>Free for up to 3 listings. Our team reviews every listing, usually within an hour.</p><button class="btn" onclick="toast('Posting opens here in the full app')">Start posting</button></div>
+    <div class="steps">${[["1", "Add photos and details", "Price, size, rooms and a short description"], ["2", "Drop a pin on the map", "So people find the exact spot"], ["3", "We review, then it goes live", "Verified listings get more enquiries"]]
+      .map(s => `<div class="step"><i>${s[0]}</i><div><b>${s[1]}</b><div class="meta">${s[2]}</div></div></div>`).join("")}</div>
+    <div class="list"><button class="li" onclick="toast('Agent sign-up opens here in the full app')"><div class="ic">${ic("verified")}</div><div class="tx"><b>I'm an agent</b><small>Get a verified badge and a lead inbox</small></div>${ic("chevron")}</button></div></div>`,
+  profile: () => `<div class="vw"><h1>Profile</h1><div class="sub">Log in to save homes and message agents</div>
+    <div class="login"><div class="who"><div class="av">${ic("user")}</div><div><b>Welcome to Nestmap</b><div class="meta">Enter your phone number to continue</div></div></div>
+      <div class="phone"><input inputmode="tel" placeholder="+91 98765 43210"><button class="btn primary" onclick="toast('OTP sent (demo)')">Send OTP</button></div></div>
+    <div class="list">
+      <div class="li"><div class="ic">${ic("moon")}</div><div class="tx"><b>Appearance</b></div><div class="seg" id="themeSeg">${["auto", "light", "dark"].map(t => `<button data-t="${t}" class="${(localStorage.getItem("theme") || "auto") === t ? "on" : ""}">${t[0].toUpperCase() + t.slice(1)}</button>`).join("")}</div></div>
+      ${[["globe", "Language", "English"], ["bell", "Alerts", "Price drops, replies"], ["shield", "Privacy & data", "Your number stays private"], ["help", "Help & support", "FAQ and contact"]]
+        .map(r => `<button class="li" onclick="toast('${r[1]} opens here in the full app')"><div class="ic">${ic(r[0])}</div><div class="tx"><b>${r[1]}</b><small>${r[2]}</small></div>${ic("chevron")}</button>`).join("")}</div></div>`,
+};
+function renderView() {            // redraws the open page in place, keeping the scroll position
+  const el = $("view"), top = el.scrollTop;
+  el.innerHTML = VIEWS[curView](); el.scrollTop = top;
+  const seg = $("themeSeg"); if (seg) seg.onclick = e => { const t = e.target.dataset.t; if (t) { setTheme(t); renderView(); } };
+}
+function showView(v) {
+  curView = v; closeAll(); closeDetail();
+  [...$("nav").querySelectorAll("button")].forEach(b => b.classList.toggle("on", b.dataset.v === v));
+  const el = $("view");
+  if (v === "explore") { el.classList.remove("open"); return; }
+  el.classList.add("open"); el.scrollTop = 0; renderView();
+}
+$("nav").onclick = e => { const b = e.target.closest("button[data-v]"); if (b) showView(b.dataset.v); };
+
+/* ---------- theme ---------- */
+function setTheme(t) { try { localStorage.setItem("theme", t); } catch {} applyTheme(); }
+function applyTheme() {
+  let t = "auto"; try { t = localStorage.getItem("theme") || "auto"; } catch {}
+  document.documentElement.dataset.theme = t === "auto" ? "" : t;
+  const dark = t === "dark" || (t === "auto" && matchMedia("(prefers-color-scheme: dark)").matches);
+  document.body.classList.toggle("darkmap", dark);
+  $("themeColor").content = dark ? "#10141a" : "#ffffff";
+}
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyTheme);
+
+/* ---------- search (OpenStreetMap Nominatim) + locate ---------- */
+$("q").addEventListener("keydown", async e => {
+  if (e.key !== "Enter" || !e.target.value.trim()) return;
+  try {
+    const r = await (await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" + encodeURIComponent(e.target.value))).json();
+    if (r[0]) map.flyTo([+r[0].lat, +r[0].lon], 13); else toast("Couldn't find that place");
+  } catch { toast("Search needs an internet connection"); }
+  e.target.blur();
+});
+function goHere(first) {
+  navigator.geolocation && navigator.geolocation.getCurrentPosition(pos => {
+    const here = [pos.coords.latitude, pos.coords.longitude];
+    if (first) CENTER = here;   // demo homes appear around the user once the map gets there
+    map.flyTo(here, first ? 13 : 14);
+  }, () => {});
+}
+$("locate").onclick = () => goHere(false);
+document.addEventListener("keydown", e => { if (e.key === "Escape") { closeDetail(); closeAll(); } });
+
+applyTheme(); updateBadges(); setRange(); render(); ensureArea(CENTER); goHere(true);
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>

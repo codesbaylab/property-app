@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nestmap Admin Design Board</title>
+<style>
+  :root { --fg:#14161a; --muted:#6b7280; --line:#e5e7eb; --accent:#0f766e; --soft:#f6f7f9; --ok:#15803d; --warn:#b45309; --bad:#b91c1c; }
+  * { box-sizing: border-box; margin: 0; }
+  body { font: 13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--fg); background: #e9ecef; padding: 32px 24px 64px; }
+  h1 { font-size: 26px; letter-spacing: -.01em; } .sub { color: var(--muted); margin: 4px 0 28px; }
+  .board { display: grid; gap: 40px; justify-content: center; grid-template-columns: minmax(0, 1040px); }
+  .cap { font-weight: 700; font-size: 15px; margin-bottom: 8px; } .cap small { font-weight: 400; color: var(--muted); margin-left: 8px; }
+  .phase { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: #dbeafe; color: #1d4ed8; margin-left: 8px; }
+  .phase.p2 { background: #fef3c7; color: #92400e; } .phase.p3 { background: #ede9fe; color: #5b21b6; }
+
+  .win { height: 700px; border-radius: 12px; border: 1px solid #cfd4da; background: #fff; overflow: hidden; display: flex; box-shadow: 0 10px 30px rgba(0,0,0,.08); }
+  .side { width: 200px; background: #14161a; color: #cbd5e1; padding: 16px 10px; flex: none; display: flex; flex-direction: column; gap: 2px; }
+  .side .logo { color: #fff; font-weight: 800; font-size: 16px; padding: 4px 10px 14px; } .side .logo i { color: #2dd4bf; font-style: normal; }
+  .side a { padding: 5px 10px; border-radius: 8px; display: flex; justify-content: space-between; } .side a.on { background: #24282f; color: #fff; }
+  .side a b { background: #e11d48; color: #fff; border-radius: 999px; font-size: 10px; padding: 0 6px; align-self: center; }
+  .side .grp { font-size: 10px; letter-spacing: .08em; color: #6b7280; padding: 12px 10px 4px; }
+  .side .me { margin-top: auto; padding: 10px; border-top: 1px solid #2b3038; font-size: 12px; }
+  .main { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--soft); }
+  .bar { height: 54px; background: #fff; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; flex: none; }
+  .bar h2 { font-size: 17px; } .bar .s { background: var(--soft); border-radius: 8px; padding: 6px 14px; color: var(--muted); width: 240px; }
+  .page { position: relative; padding: 18px 20px; overflow: hidden; flex: 1; }
+
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 14px; }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+  .kpi small { color: var(--muted); } .kpi b { display: block; font-size: 24px; margin: 2px 0; letter-spacing: -.01em; } .kpi i { font-style: normal; font-size: 12px; color: var(--ok); }
+  .kpi i.dn { color: var(--bad); }
+  .two { display: grid; grid-template-columns: 1.6fr 1fr; gap: 12px; } .three { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+  .card h3 { font-size: 13px; margin-bottom: 10px; }
+  .bars { display: flex; align-items: flex-end; gap: 8px; height: 150px; } .bars i { flex: 1; background: #99d5cd; border-radius: 4px 4px 0 0; } .bars i.hi { background: var(--accent); }
+  .lbl { display: flex; gap: 8px; color: var(--muted); font-size: 11px; margin-top: 4px; } .lbl span { flex: 1; text-align: center; }
+
+  table { width: 100%; border-collapse: collapse; background: #fff; } th { text-align: left; font-size: 11px; color: var(--muted); font-weight: 600; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; } tr:last-child td { border: 0; }
+  .tbl { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #fff; }
+  .th { width: 38px; height: 28px; border-radius: 6px; background: #cbd5e1 center/cover; display: inline-block; vertical-align: middle; margin-right: 8px; }
+  .st { font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; } .st.ok { background: #dcfce7; color: var(--ok); } .st.wr { background: #fef3c7; color: var(--warn); } .st.bd { background: #fee2e2; color: var(--bad); } .st.gr { background: #e5e7eb; color: #374151; }
+  .tools { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; }
+  .inp { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; color: var(--muted); } .inp.w { flex: 1; }
+  .btn { background: var(--accent); color: #fff; border-radius: 8px; padding: 7px 14px; font-weight: 700; display: inline-block; } .btn.g { background: #fff; color: var(--fg); border: 1px solid var(--line); } .btn.r { background: #fff; color: var(--bad); border: 1px solid #fecaca; }
+  .av { width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: #fff; display: inline-grid; place-items: center; font-weight: 700; font-size: 11px; vertical-align: middle; margin-right: 8px; }
+  .row { display: flex; gap: 8px; align-items: center; } .muted { color: var(--muted); }
+  .chip { border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; background: #fff; font-size: 12px; display: inline-block; margin: 0 4px 4px 0; } .chip.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .li { padding: 9px 0; border-top: 1px solid var(--line); display: flex; justify-content: space-between; gap: 8px; } .li:first-of-type { border: 0; }
+  .map { height: 140px; border-radius: 10px; background: linear-gradient(120deg,#bcd9f2 0 28%,#f1ece0 28%); position: relative; } .map u { position: absolute; left: 58%; top: 40%; width: 14px; height: 14px; background: var(--accent); border: 3px solid #fff; border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,.3); }
+  .ph { height: 96px; border-radius: 10px; background: #cbd5e1 center/cover; }
+  .heat { display: grid; grid-template-columns: repeat(12,1fr); gap: 3px; } .heat i { aspect-ratio: 1; border-radius: 3px; }
+  .login { margin: auto; width: 340px; } .login .field { border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; margin-top: 10px; background: #fff; } .login .field small { display: block; color: var(--muted); font-size: 11px; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 6px; background: var(--soft); border: 1px solid var(--line); font-size: 11px; }
+  .sp { justify-content: space-between; } .k { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px; } .k small { color: var(--muted); display: block; } .k b { font-size: 22px; }
+  .t2 { background: #fff; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; } .a-btn { background: var(--accent); color: #fff; border-radius: 8px; padding: 6px 14px; font-weight: 700; display: inline-block; } .a-btn.g { background: #fff; color: var(--fg); border: 1px solid var(--line); }
+</style>
+</head>
+<body>
+<h1>Nestmap Admin — design board</h1>
+<p class="sub">Desktop web dashboard for running the platform. Phase tags show the build order: <span class="phase">Phase 1</span> <span class="phase p2">Phase 2</span> <span class="phase p3">Phase 3</span></p>
+<div class="board" id="board"></div>
+
+<script>
+const NAV = [["Dashboard"],["Listings"],["Review queue","14"],["Users"],["Reports","5"],
+  ["_Phase 2"],["Agents"],["Enquiries"],["Content"],
+  ["_Phase 3"],["Analytics"],["Plans & payments"],["Admin team"],
+  ["_Operations"],["Support tickets"],["Announcements"],["Fraud & audit"],["Rules & limits"],["Compliance"],["Operations"],["Promos & referrals"]];
+const img = n => `style="background-image:url(https://picsum.photos/seed/${n}/120/90)"`;
+const bars = (arr, hi) => `<div class="bars">${arr.map((h, i) => `<i class="${i === hi ? "hi" : ""}" style="height:${h}%"></i>`).join("")}</div>`;
+
+function win(active, title, body, tools = "") {
+  const side = NAV.map(([n, b]) => n[0] === "_" ? `<div class="grp">${n.slice(1).toUpperCase()}</div>`
+    : `<a class="${n === active ? "on" : ""}">${n}${b ? `<b>${b}</b>` : ""}</a>`).join("");
+  return `<div class="win"><div class="side"><div class="logo">Nest<i>map</i> admin</div>${side}
+    <div class="me"><b style="color:#fff">Aghil</b><br>Super admin</div></div>
+    <div class="main"><div class="bar"><h2>${title}</h2><div class="row"><div class="s">Search…</div>${tools}<span class="av" style="margin:0">A</span></div></div>
+    <div class="page">${body}</div></div></div>`;
+}
+const screens = [];
+const add = (n, t, ph, sub, html) => screens.push(`<div><div class="cap">${n} · ${t}<span class="phase ${ph === 2 ? "p2" : ph === 3 ? "p3" : ""}">Phase ${ph}</span><small>${sub}</small></div>${html}</div>`);
+
+/* 1 Login */
+add(1, "Login", 1, "Email, password and 2-factor", `<div class="win" style="background:var(--soft)"><div class="login"><div class="card" style="padding:26px">
+  <div style="font-weight:800;font-size:20px">Nest<span style="color:var(--accent)">map</span> admin</div><div class="muted" style="margin-bottom:6px">Sign in to continue</div>
+  <div class="field"><small>Email</small>admin@nestmap.app</div><div class="field"><small>Password</small>••••••••••</div>
+  <div class="field"><small>6-digit authenticator code</small>482 913</div>
+  <div class="btn" style="display:block;text-align:center;margin-top:14px;padding:10px">Sign in</div>
+  <div class="muted" style="text-align:center;margin-top:10px">Forgot password?</div></div></div></div>`);
+
+/* 2 Dashboard */
+add(2, "Dashboard", 1, "Health of the platform at a glance", win("Dashboard", "Dashboard", `
+  <div class="kpis">
+    <div class="card kpi"><small>Total listings</small><b>12,480</b><i>▲ 4.2% this week</i></div>
+    <div class="card kpi"><small>New today</small><b>86</b><i>▲ 12%</i></div>
+    <div class="card kpi"><small>Pending approval</small><b>14</b><i class="dn">▲ 3 since morning</i></div>
+    <div class="card kpi"><small>Enquiries today</small><b>412</b><i>▲ 8%</i></div></div>
+  <div class="two"><div class="card"><h3>New listings · last 12 days</h3>${bars([35,48,40,62,55,70,58,66,80,72,90,76], 10)}<div class="lbl">${[1,2,3,4,5,6,7,8,9,10,11,12].map(d => `<span>${d}</span>`).join("")}</div></div>
+  <div class="card"><h3>Needs attention</h3>
+    <div class="li"><span>14 listings awaiting review</span><span class="st wr">Review</span></div>
+    <div class="li"><span>5 open reports</span><span class="st bd">Open</span></div>
+    <div class="li"><span>3 agent verifications</span><span class="st wr">Pending</span></div>
+    <div class="li"><span>2 duplicate listings flagged</span><span class="st gr">Check</span></div></div></div>`, `<span class="btn g">Last 30 days ▾</span>`));
+
+/* 3 Listings */
+const L = [["24 Beach Rd","Apartment","₹1.6 Cr","Anil Kumar","Live","ok","h1"],["12 Lake View St","House","₹85 L","Fathima R.","Pending","wr","h2"],["48 Park Ave","Villa","₹2.4 Cr","Suresh Nair","Live","ok","h3"],["7 Hill Rd","Apartment","₹32k/mo","Meera Das","Rejected","bd","h4"],["19 Garden Ln","Studio","₹14k/mo","Anil Kumar","Live","ok","h5"],["3 Canal Rd","House","₹1.1 Cr","Owner","Sold","gr","h6"],["61 Main St","Apartment","₹78 L","Fathima R.","Pending","wr","h7"]];
+add(3, "Listings", 1, "Search, filter and bulk actions", win("Listings", "Listings", `
+  <div class="tools"><div class="inp w">Search address, ID or agent</div><span class="chip on">All</span><span class="chip">Live</span><span class="chip">Pending</span><span class="chip">Sold</span><span class="inp">City ▾</span><span class="inp">Type ▾</span></div>
+  <div class="tbl"><table><tr><th>☐</th><th>Listing</th><th>Type</th><th>Price</th><th>Agent</th><th>Status</th><th></th></tr>
+  ${L.map(r => `<tr><td>☐</td><td><span class="th" ${img(r[6])}></span><b>${r[0]}</b></td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td><span class="st ${r[5]}">${r[4]}</span></td><td class="muted">⋯</td></tr>`).join("")}</table></div>
+  <div class="row" style="margin-top:10px"><span class="muted">0 selected</span><span class="btn g">Approve</span><span class="btn g">Unpublish</span><span class="btn r">Delete</span></div>`, `<span class="btn">+ Add listing</span>`));
+
+/* 4 Review */
+add(4, "Listing review", 1, "Moderation queue with approve / reject", win("Review queue", "Review queue · 14", `
+  <div style="display:grid;grid-template-columns:230px 1fr;gap:12px;height:100%">
+  <div class="card" style="padding:8px"><div class="li" style="background:var(--soft);padding:8px;border-radius:8px"><b>12 Lake View St</b><span class="muted">2m</span></div>
+    <div class="li"><span>61 Main St</span><span class="muted">9m</span></div><div class="li"><span>5 Rose Ave</span><span class="muted">21m</span></div><div class="li"><span>88 Temple St</span><span class="muted">1h</span></div><div class="li"><span>40 Beach Rd</span><span class="muted">2h</span></div></div>
+  <div class="card"><div class="row" style="justify-content:space-between"><div><b style="font-size:16px">12 Lake View St · House · ₹85 L</b><div class="muted">Submitted by Fathima R. · Verified agent</div></div><span class="st wr">Pending</span></div>
+  <div class="three" style="margin:12px 0"><div class="ph" ${img("r1")}></div><div class="ph" ${img("r2")}></div><div class="map"><u></u></div></div>
+  <div class="row" style="gap:18px;margin-bottom:10px"><span>✅ Photos clear (4)</span><span>✅ Pin matches address</span><span>⚠️ Price 18% below area average</span><span>✅ No duplicate</span></div>
+  <div class="inp" style="margin-bottom:10px">Reason (required if rejecting)…</div>
+  <div class="row"><span class="btn">Approve</span><span class="btn g">Request changes</span><span class="btn r">Reject</span></div></div></div>`));
+
+/* 5 Users */
+add(5, "Users", 1, "Buyers, owners and agents", win("Users", "Users", `
+  <div class="tools"><div class="inp w">Search name, phone or email</div><span class="chip on">All</span><span class="chip">Buyers</span><span class="chip">Owners</span><span class="chip">Agents</span><span class="chip">Suspended</span></div>
+  <div class="tbl"><table><tr><th>User</th><th>Role</th><th>Phone</th><th>Listings</th><th>Joined</th><th>Status</th><th></th></tr>
+  ${[["Aghil","Owner","+91 98•••• 1234","2","Oct 2026","Active","ok"],["Anil Kumar","Agent","+91 90•••• 7781","38","Aug 2026","Verified","ok"],["Nisha P.","Buyer","+91 99•••• 4410","0","Oct 2026","Active","ok"],["Rahul S.","Owner","+91 88•••• 2093","5","Sep 2026","Suspended","bd"],["Meera Das","Agent","+91 97•••• 5566","21","Jul 2026","Verified","ok"],["Joseph T.","Buyer","+91 94•••• 3320","0","Oct 2026","Active","ok"]].map(r => `<tr><td><span class="av">${r[0][0]}</span><b>${r[0]}</b></td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td><span class="st ${r[6]}">${r[5]}</span></td><td class="muted">⋯</td></tr>`).join("")}</table></div>`));
+
+/* 6 Reports */
+add(6, "Reports & flags", 1, "Fake, sold, duplicate or abusive content", win("Reports", "Reports · 5 open", `
+  <div class="tools"><span class="chip on">Open</span><span class="chip">Resolved</span><span class="chip">All</span></div>
+  <div class="tbl"><table><tr><th>Reported item</th><th>Reason</th><th>Reported by</th><th>Time</th><th>Status</th><th>Action</th></tr>
+  ${[["24 Beach Rd · listing","Already sold","Nisha P.","10m","wr","Open"],["Rahul S. · user","Spam messages","Anil Kumar","1h","wr","Open"],["7 Hill Rd · listing","Photos not real","Joseph T.","3h","wr","Open"],["61 Main St · listing","Duplicate","System","5h","wr","Open"],["Meera Das · agent","Rude behaviour","Nisha P.","1d","gr","Resolved"]].map(r => `<tr><td><b>${r[0]}</b></td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td><span class="st ${r[4]}">${r[5]}</span></td><td><span class="btn g">Review</span></td></tr>`).join("")}</table></div>`));
+
+/* 7 Agents */
+add(7, "Agents & verification", 2, "Documents, badge and ratings", win("Agents", "Agents", `
+  <div class="three">
+  ${[["Fathima R.","Verification pending","wr","ID ✓ · Licence ✓ · Selfie ✗"],["Anil Kumar","Verified","ok","38 listings · ★ 4.7"],["Suresh Nair","Verified","ok","24 listings · ★ 4.5"]].map(a => `<div class="card"><div class="row"><span class="av" style="width:40px;height:40px">${a[0][0]}</span><div><b>${a[0]}</b><div class="muted">${a[3]}</div></div></div>
+    <div style="margin:10px 0"><span class="st ${a[2]}">${a[1]}</span></div>
+    <div class="row"><div class="ph" style="height:60px;flex:1" ${img("d" + a[0])}></div><div class="ph" style="height:60px;flex:1" ${img("e" + a[0])}></div></div>
+    <div class="row" style="margin-top:10px"><span class="btn">Verify</span><span class="btn g">Ask for more</span></div></div>`).join("")}</div>
+  <div class="card" style="margin-top:12px"><h3>Ratings &amp; reviews</h3><div class="li"><span>★★★★★ "Quick replies, honest listing" — Nisha P. on Anil Kumar</span><span class="muted">2d</span></div><div class="li"><span>★★☆☆☆ "Property was different from photos" — Joseph T. on Suresh Nair</span><span class="st bd">Flag</span></div></div>`));
+
+/* 8 Enquiries */
+add(8, "Enquiries & leads", 2, "Every message sent through the app", win("Enquiries", "Enquiries", `
+  <div class="tools"><div class="inp w">Search buyer, agent or listing</div><span class="chip on">All</span><span class="chip">Unanswered</span><span class="chip">Answered</span></div>
+  <div class="tbl"><table><tr><th>Buyer</th><th>Listing</th><th>Agent</th><th>Message</th><th>Sent</th><th>Reply</th></tr>
+  ${[["Nisha P.","24 Beach Rd","Anil Kumar","Is this still available?","5m","Waiting","wr"],["Joseph T.","48 Park Ave","Suresh Nair","Can I visit Saturday?","40m","Replied","ok"],["Aghil","19 Garden Ln","Anil Kumar","Is rent negotiable?","2h","Replied","ok"],["Sana M.","61 Main St","Fathima R.","Any parking?","6h","No reply","bd"]].map(r => `<tr><td><b>${r[0]}</b></td><td>${r[1]}</td><td>${r[2]}</td><td class="muted">${r[3]}</td><td>${r[4]}</td><td><span class="st ${r[6]}">${r[5]}</span></td></tr>`).join("")}</table></div>
+  <div class="two" style="margin-top:12px"><div class="card kpi"><small>Average response time</small><b>52 min</b><i>▼ 14 min faster</i></div><div class="card kpi"><small>Unanswered over 24h</small><b>9</b><i class="dn">Nudge agents</i></div></div>`));
+
+/* 9 Content */
+add(9, "Content & settings", 2, "Cities, types, amenities, featured, banners", win("Content", "Content & settings", `
+  <div class="three">
+  <div class="card"><h3>Cities &amp; areas</h3><span class="chip on">Kozhikode</span><span class="chip">Kochi</span><span class="chip">Thrissur</span><span class="chip">Malappuram</span><span class="chip">+ Add city</span><div class="muted" style="margin-top:6px">42 areas in Kozhikode</div></div>
+  <div class="card"><h3>Property types</h3><span class="chip">Apartment</span><span class="chip">House</span><span class="chip">Villa</span><span class="chip">Plot</span><span class="chip">Studio</span><span class="chip">+ Add</span></div>
+  <div class="card"><h3>Amenities</h3><span class="chip">Parking</span><span class="chip">Lift</span><span class="chip">Gym</span><span class="chip">Pool</span><span class="chip">Security</span><span class="chip">+ Add</span></div></div>
+  <div class="two" style="margin-top:12px"><div class="card"><h3>Featured listings</h3>
+    <div class="li"><span>48 Park Ave · Villa</span><span class="st ok">Until 30 Oct</span></div><div class="li"><span>24 Beach Rd · Apartment</span><span class="st ok">Until 2 Nov</span></div><div class="li"><span>+ Feature a listing</span><span class="muted">›</span></div></div>
+  <div class="card"><h3>App banner</h3><div class="ph" ${img("banner")} style="height:70px"></div><div class="muted" style="margin-top:8px">"Zero brokerage homes in Kozhikode" · Live</div><div class="row" style="margin-top:8px"><span class="btn g">Edit</span></div></div></div>`));
+
+/* 10 Analytics */
+const heat = Array.from({length: 48}, (_, i) => `<i style="background:rgba(15,118,110,${(((i * 7) % 10) / 10 * .85 + .1).toFixed(2)})"></i>`).join("");
+add(10, "Analytics", 3, "Search demand, prices and conversion", win("Analytics", "Analytics", `
+  <div class="two"><div class="card"><h3>Most searched areas</h3>
+    ${[["Palayam",92],["Mavoor Road",74],["Beach Rd",61],["Medical College",48],["Feroke",35]].map(a => `<div class="row" style="margin-bottom:8px"><span style="width:110px">${a[0]}</span><i style="height:12px;border-radius:6px;background:var(--accent);width:${a[1]}%;display:block"></i><span class="muted">${a[1]}k</span></div>`).join("")}</div>
+  <div class="card"><h3>Conversion funnel</h3>
+    ${[["Map views","100%","100"],["Pin taps","38%","38"],["Detail views","21%","21"],["Enquiries","4.1%","8"]].map(f => `<div style="margin-bottom:8px"><div class="row" style="justify-content:space-between"><span>${f[0]}</span><b>${f[1]}</b></div><i style="display:block;height:8px;border-radius:4px;background:var(--accent);width:${f[2]}%"></i></div>`).join("")}</div></div>
+  <div class="card" style="margin-top:12px"><h3>Price heatmap · avg ₹ per sqft by area</h3><div class="heat">${heat}</div><div class="row muted" style="margin-top:8px"><span>Low</span><i style="flex:1;height:6px;border-radius:3px;background:linear-gradient(90deg,rgba(15,118,110,.1),rgba(15,118,110,.95))"></i><span>High</span></div></div>`, `<span class="btn g">Export CSV</span>`));
+
+/* 11 Plans */
+add(11, "Plans & payments", 3, "Listing fees, boosts and subscriptions", win("Plans & payments", "Plans & payments", `
+  <div class="three">
+  ${[["Free","₹0","3 active listings · basic photos"],["Agent Pro","₹999 / mo","Unlimited listings · verified badge · analytics"],["Boost","₹299 / listing","Top of the map for 7 days"]].map((p, i) => `<div class="card" ${i === 1 ? 'style="border-color:var(--accent)"' : ""}><b>${p[0]}</b><div class="big" style="font-size:22px;font-weight:800;margin:4px 0">${p[1]}</div><div class="muted">${p[2]}</div><div class="row" style="margin-top:10px"><span class="btn g">Edit plan</span></div></div>`).join("")}</div>
+  <div class="two" style="margin-top:12px"><div class="card"><h3>Revenue · last 8 weeks</h3>${bars([30,38,35,50,58,52,70,84], 7)}</div>
+  <div class="tbl"><table><tr><th>Payment</th><th>Amount</th><th>Status</th></tr>${[["Anil Kumar · Pro","₹999","Paid","ok"],["Suresh Nair · Boost","₹299","Paid","ok"],["Meera Das · Pro","₹999","Failed","bd"],["Fathima R. · Boost","₹299","Refunded","gr"]].map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td><span class="st ${r[3]}">${r[2]}</span></td></tr>`).join("")}</table></div></div>`));
+
+/* 12 Admin team */
+add(12, "Admin team & activity log", 3, "Roles and who changed what", win("Admin team", "Admin team", `
+  <div class="two"><div class="tbl"><table><tr><th>Member</th><th>Role</th><th>2FA</th><th>Last active</th></tr>
+  ${[["Aghil","Super admin","On","Now"],["Priya K.","Moderator","On","12m ago"],["Vishnu M.","Support","On","2h ago"],["Deepa S.","Moderator","Off","3d ago"]].map(r => `<tr><td><span class="av">${r[0][0]}</span><b>${r[0]}</b></td><td><span class="pill">${r[1]}</span></td><td><span class="st ${r[2] === "On" ? "ok" : "bd"}">${r[2]}</span></td><td>${r[3]}</td></tr>`).join("")}</table></div>
+  <div class="card"><h3>Roles</h3><div class="li"><span><b>Super admin</b><br><span class="muted">Everything, incl. payments and team</span></span></div><div class="li"><span><b>Moderator</b><br><span class="muted">Review, reports, users</span></span></div><div class="li"><span><b>Support</b><br><span class="muted">Enquiries and read-only listings</span></span></div></div></div>
+  <div class="card" style="margin-top:12px"><h3>Activity log</h3>
+    <div class="li"><span><b>Priya K.</b> rejected "7 Hill Rd" — photos not real</span><span class="muted">12m ago</span></div>
+    <div class="li"><span><b>Aghil</b> verified agent Anil Kumar</span><span class="muted">1h ago</span></div>
+    <div class="li"><span><b>Vishnu M.</b> suspended user Rahul S.</span><span class="muted">3h ago</span></div></div>`, `<span class="btn">+ Invite member</span>`));
+
+
+/* ---- operations screens ---- */
+const out = [];
+let adminN = 12;
+const PH = {"Support tickets":2,"Announcements":2,"Fraud & audit":2,"Rules & limits":1,"Compliance":2,"Operations":3,"Promos & referrals":3};
+const adm = (cap, active, title, body) => { add(++adminN, cap, PH[active] || 2, "", win(active, title, body)); return ""; };
+const tk = [["#1042","Can't upload photos","Fathima R.","High","bd","Open"],["#1041","Wrong price shown","Nisha P.","Normal","wr","In progress"],["#1040","Refund for boost","Anil Kumar","Normal","wr","Open"],["#1039","How to verify?","Rahul S.","Low","gr","Resolved"]];
+out.push(`<h2></h2><div class="desc">The operational side: support, announcements, fraud checks, rules, compliance, running costs and promotions.</div><div class="grid">
+${adm("Support tickets", "Support tickets", "Support tickets · 12 open", `<div class="t2"><table><tr><th>ID</th><th>Subject</th><th>From</th><th>Priority</th><th>Status</th><th>Assigned</th></tr>${tk.map(r => `<tr><td>${r[0]}</td><td><b>${r[1]}</b></td><td>${r[2]}</td><td>${r[3]}</td><td><span class="st ${r[4]}">${r[5]}</span></td><td>Vishnu M.</td></tr>`).join("")}</table></div>
+  <div class="two" style="margin-top:12px"><div class="k"><small>Avg first response</small><b>38 min</b></div><div class="k"><small>Open over 24h</small><b>3</b></div></div>`)}
+${adm("Announcements", "Announcements", "Announcements", `<div class="two"><div class="k"><b style="font-size:15px">New announcement</b><div class="inp" style="margin-top:8px">Title</div><div class="inp" style="height:60px">Message…</div><div class="inp">Audience: All users ▾</div><div class="inp">Channel: Push + in-app ▾</div><span class="a-btn">Send now</span> <span class="a-btn g">Schedule</span></div>
+  <div class="t2"><table><tr><th>Sent</th><th>Audience</th><th>Opened</th></tr><tr><td><b>Monsoon safety tips</b></td><td>Owners</td><td>61%</td></tr><tr><td><b>New: Schedule a visit</b></td><td>All</td><td>48%</td></tr><tr><td><b>Verify to get a badge</b></td><td>Agents</td><td>74%</td></tr></table></div></div>`)}
+${adm("Fraud & audit", "Fraud & audit", "Fraud & audit", `<div class="three"><div class="k"><small>Duplicates caught</small><b>23</b></div><div class="k"><small>Reused photos</small><b>9</b></div><div class="k"><small>Suspicious accounts</small><b>4</b></div></div>
+  <div class="t2" style="margin-top:12px"><table><tr><th>Signal</th><th>Item</th><th>Score</th><th></th></tr><tr><td>Same photo on 3 accounts</td><td><b>7 Hill Rd</b></td><td><span class="st bd">High 92</span></td><td><span class="a-btn g">Investigate</span></td></tr><tr><td>Price 40% below area</td><td><b>61 Main St</b></td><td><span class="st wr">Med 64</span></td><td><span class="a-btn g">Investigate</span></td></tr><tr><td>12 listings in 1 hour</td><td><b>Rahul S.</b></td><td><span class="st bd">High 88</span></td><td><span class="a-btn g">Investigate</span></td></tr></table></div>`)}
+${adm("Rules & limits", "Rules & limits", "Rules & limits", `<div class="two"><div class="k"><b style="font-size:15px">Listings</b>
+  <div class="row sp" style="margin-top:10px"><span>Listing expires after</span><b>30 days</b></div><div class="row sp" style="margin-top:8px"><span>Reminder at</span><b>day 25</b></div><div class="row sp" style="margin-top:8px"><span>Free plan limit</span><b>3 listings</b></div><div class="row sp" style="margin-top:8px"><span>Min photos</span><b>3</b></div></div>
+  <div class="k"><b style="font-size:15px">Safety</b><div class="row sp" style="margin-top:10px"><span>Max posts per hour</span><b>5</b></div><div class="row sp" style="margin-top:8px"><span>Auto-hide at reports</span><b>3</b></div><div class="row sp" style="margin-top:8px"><span>Mask phone numbers</span><b style="color:var(--ok)">On</b></div><div class="row sp" style="margin-top:8px"><span>OTP attempts</span><b>5 / hour</b></div></div></div>`)}
+${adm("Compliance", "Compliance", "Compliance · data requests", `<div class="three"><div class="k"><small>Deletion requests</small><b>6</b></div><div class="k"><small>Data export requests</small><b>2</b></div><div class="k"><small>Due within 30 days</small><b>8</b></div></div>
+  <div class="t2" style="margin-top:12px"><table><tr><th>User</th><th>Request</th><th>Received</th><th>Due</th><th></th></tr><tr><td><b>Rahul S.</b></td><td>Delete account</td><td>2 days ago</td><td>28 days</td><td><span class="a-btn g">Process</span></td></tr><tr><td><b>Nisha P.</b></td><td>Download data</td><td>5 days ago</td><td>25 days</td><td><span class="a-btn g">Generate</span></td></tr></table></div>`)}
+${adm("Operations", "Operations", "Operations · costs & health", `<div class="three"><div class="k"><small>OTP SMS this month</small><b>₹4,120</b></div><div class="k"><small>Storage used</small><b>38 GB</b></div><div class="k"><small>Error rate</small><b style="color:var(--ok)">0.3%</b></div></div>
+  <div class="two" style="margin-top:12px"><div class="k"><b style="font-size:14px">OTP sends · 14 days</b>${bars([30,40,35,55,50,70,62,58,66,80,72,64,70,76], 13)}</div><div class="t2"><table><tr><th>Service</th><th>Cost</th></tr><tr><td>SMS / OTP</td><td>₹4,120</td></tr><tr><td>Maps &amp; geocoding</td><td>₹2,300</td></tr><tr><td>Storage</td><td>₹900</td></tr><tr><td>Push / WhatsApp</td><td>₹1,450</td></tr></table></div></div>`)}
+${adm("Promos & referrals", "Promos & referrals", "Promos & referrals", `<div class="two"><div class="t2"><table><tr><th>Code</th><th>Offer</th><th>Used</th><th>Status</th></tr><tr><td><b>WELCOME50</b></td><td>50% off first boost</td><td>212</td><td><span class="st ok">Active</span></td></tr><tr><td><b>PRO3MO</b></td><td>3 months Pro free</td><td>38</td><td><span class="st ok">Active</span></td></tr><tr><td><b>DIWALI</b></td><td>₹100 off</td><td>0</td><td><span class="st gr">Scheduled</span></td></tr></table></div>
+  <div class="k"><b style="font-size:15px">Referral programme</b><div class="muted" style="margin:6px 0">Invite a friend, both get a free boost.</div><div class="row sp" style="margin-top:8px"><span>Invites sent</span><b>640</b></div><div class="row sp" style="margin-top:6px"><span>Signed up</span><b>188</b></div><div class="row sp" style="margin-top:6px"><span>Rewards given</span><b>71</b></div><span class="a-btn" style="margin-top:12px">+ New code</span></div></div>`)}
+</div>`);
+
+
+
+/* ---- detail & search screens ---- */
+add(++adminN, "User detail", 1, "Everything about one user in one place", win("Users", "Users › Rahul S.", `
+  <div class="card" style="display:flex;gap:14px;align-items:center;justify-content:space-between"><div class="row" style="gap:14px"><span class="av" style="width:56px;height:56px;font-size:20px;margin:0">R</span><div><b style="font-size:17px">Rahul S.</b> <span class="st bd">Suspended</span><div class="muted">Owner · +91 88•••• 2093 · joined Sep 2026 · Kozhikode</div></div></div>
+    <div class="row"><span class="btn g">Message</span><span class="btn g">Reinstate</span><span class="btn g" style="color:var(--bad)">Ban</span></div></div>
+  <div class="kpis" style="margin-top:12px"><div class="card kpi"><small>Listings</small><b>5</b></div><div class="card kpi"><small>Reports against</small><b style="color:var(--bad)">3</b></div><div class="card kpi"><small>Enquiries received</small><b>41</b></div><div class="card kpi"><small>Risk score</small><b style="color:var(--bad)">88</b></div></div>
+  <div class="two"><div class="card"><div class="row" style="margin-bottom:8px"><span class="chip on">Listings</span><span class="chip">Messages</span><span class="chip">Reports</span><span class="chip">Payments</span></div>
+    <div class="tbl"><table><tr><th>Listing</th><th>Status</th><th>Reports</th></tr><tr><td><b>7 Hill Rd</b></td><td><span class="st bd">Hidden</span></td><td>2</td></tr><tr><td><b>61 Main St</b></td><td><span class="st bd">Hidden</span></td><td>1</td></tr><tr><td><b>3 Canal Rd</b></td><td><span class="st gr">Sold</span></td><td>0</td></tr></table></div></div>
+  <div class="card"><b>Activity</b><div class="li"><span>Suspended by Priya K. — fake photos</span><span class="muted">2h</span></div><div class="li"><span>3rd report received</span><span class="muted">3h</span></div><div class="li"><span>Posted 12 listings in 1 hour</span><span class="muted">1d</span></div><div class="li"><span>Verified phone</span><span class="muted">Sep 14</span></div></div></div>`));
+
+add(++adminN, "Listing detail & edit", 1, "Fix, moderate and see the full history", win("Listings", "Listings › 12 Lake View St", `
+  <div class="row" style="justify-content:space-between;margin-bottom:10px"><div class="row"><span class="st wr">Pending review</span><span class="muted">ID 4821 · submitted 2m ago · Fathima R. (verified agent)</span></div><div class="row"><span class="btn g">View as user</span><span class="btn g">Unpublish</span><span class="btn g" style="color:var(--bad)">Delete</span></div></div>
+  <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:12px"><div class="card"><div class="three"><div class="ph" style="background-image:url(https://picsum.photos/seed/r1/200/150)"></div><div class="ph" style="background-image:url(https://picsum.photos/seed/r2/200/150)"></div><div class="map"><u></u></div></div>
+    <div class="row" style="margin-top:12px"><div class="inp" style="flex:1">Price · ₹ 85,00,000</div><div class="inp" style="flex:1">Type · House</div><div class="inp" style="flex:1">Beds · 2</div></div><div class="inp">Address · 12 Lake View St, Kozhikode</div><div class="inp" style="height:60px">Description · Bright, airy, close to the lake…</div><div class="row"><span class="btn">Save edits</span><span class="muted">Edits are logged and the owner is notified.</span></div></div>
+  <div><div class="card"><b>Decision</b><div class="inp" style="margin-top:8px">Reason template ▾  Photos don't match</div><div class="inp" style="height:50px">Note to owner…</div><div class="row"><span class="btn">Approve</span><span class="btn g">Request changes</span><span class="btn g" style="color:var(--bad)">Reject</span></div></div>
+  <div class="card" style="margin-top:12px"><b>History</b><div class="li"><span>Submitted</span><span class="muted">2m</span></div><div class="li"><span>Auto-check: price 18% below area</span><span class="muted">2m</span></div><div class="li"><span>Auto-check: no duplicates</span><span class="muted">2m</span></div></div></div></div>`));
+
+add(++adminN, "Global search", 2, "Find anything with ⌘K / Ctrl+K", win("Dashboard", "Dashboard", `
+  <div style="opacity:.35"><div class="kpis"><div class="card kpi"><small>Total listings</small><b>12,480</b></div><div class="card kpi"><small>New today</small><b>86</b></div><div class="card kpi"><small>Pending</small><b>14</b></div><div class="card kpi"><small>Enquiries</small><b>412</b></div></div></div>
+  <div class="card" style="position:absolute;left:120px;top:30px;width:560px;box-shadow:0 20px 50px rgba(0,0,0,.25)"><div class="inp" style="margin-bottom:10px;color:var(--fg)">🔍 rahul</div>
+    <div class="muted" style="font-size:11px;font-weight:700">USERS</div><div class="li"><span><span class="av">R</span><b>Rahul S.</b> · Owner · +91 88•••• 2093</span><span class="st bd">Suspended</span></div><div class="li"><span><span class="av">R</span><b>Rahul Menon</b> · Buyer</span><span class="st ok">Active</span></div>
+    <div class="muted" style="font-size:11px;font-weight:700;margin-top:8px">LISTINGS</div><div class="li"><span>7 Hill Rd · by Rahul S.</span><span class="st bd">Hidden</span></div>
+    <div class="muted" style="font-size:11px;font-weight:700;margin-top:8px">TICKETS · REPORTS</div><div class="li"><span>#1040 Refund for boost · Rahul S.</span><span class="st wr">Open</span></div><div class="muted" style="margin-top:8px;font-size:12px">↑↓ to move · Enter to open · Esc to close</div></div>`));
+
+add(++adminN, "Bulk import", 2, "Seed or onboard many listings from CSV", win("Listings", "Listings › Import", `
+  <div class="row" style="gap:6px;margin-bottom:12px"><span class="chip on">1 Upload</span><span class="chip on">2 Map columns</span><span class="chip">3 Check</span><span class="chip">4 Import</span></div>
+  <div class="two"><div class="card"><b>Map your columns</b>${[["address","Address"],["price","Price"],["bedrooms","Beds"],["lat","Latitude"],["lng","Longitude"],["agent_phone","Agent phone"]].map(c => `<div class="li"><span class="pill" style="background:#f6f7f9;padding:2px 8px;border-radius:6px">${c[0]}</span><span>→ <b>${c[1]}</b> ✓</span></div>`).join("")}</div>
+  <div class="card"><b>Import settings</b><div class="inp" style="margin-top:8px">Assign to · Kumar Realty ▾</div><div class="inp">If duplicate found · Skip ▾</div><div class="inp">Review · Send to review queue ▾</div><div class="inp">Source tag · Seed batch 1</div>
+    <div class="card kpi" style="margin-top:8px"><small>Preview</small><b>412 rows</b><i>▲ 388 ready · 14 duplicates · 10 errors</i></div><span class="btn" style="margin-top:8px">Import 388 rows</span></div></div>`));
+
+document.getElementById("board").innerHTML = screens.join("");
+</script>
+</body>
+</html>

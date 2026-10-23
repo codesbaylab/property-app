@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nestmap User Types Board</title>
+<style>
+  :root { --fg:#14161a; --muted:#6b7280; --line:#e5e7eb; --accent:#0f766e; --soft:#f6f7f9; --ok:#15803d; --warn:#b45309; --bad:#b91c1c; --shadow:0 6px 24px rgba(0,0,0,.14); }
+  * { box-sizing: border-box; margin: 0; }
+  body { font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--fg); background: #e9ecef; padding: 32px 24px 64px; }
+  h1 { font-size: 26px; letter-spacing: -.01em; } .sub { color: var(--muted); margin: 4px 0 24px; }
+  h2 { font-size: 20px; margin: 44px 0 4px; display: flex; align-items: center; gap: 10px; } .role { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; color: #fff; background: var(--accent); }
+  .desc { color: var(--muted); margin-bottom: 16px; max-width: 760px; }
+  .row8 { display: flex; flex-wrap: wrap; gap: 28px; }
+  .cap { text-align: center; margin-bottom: 8px; font-weight: 700; } .cap small { display: block; font-weight: 400; color: var(--muted); }
+
+  .phone { width: 316px; height: 640px; border: 8px solid #14161a; border-radius: 40px; overflow: hidden; position: relative; background: #fff; flex: none; }
+  .phone > * { position: absolute; } .fill { inset: 0; } .scroll { left: 0; right: 0; top: 44px; bottom: 64px; overflow: hidden; padding: 6px 16px; }
+  .status { top: 0; left: 0; right: 0; height: 34px; display: flex; justify-content: space-between; padding: 12px 22px 0; font-size: 11px; font-weight: 700; }
+  .map { inset: 0; background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='316' height='640'><rect width='316' height='640' fill='%23f1ece0'/><path d='M0 0h110c-20 120 30 200 10 320s-40 220-20 320H0z' fill='%23bcd9f2'/><g fill='none' stroke='%23fff' stroke-width='7'><path d='M130 0c20 140 90 200 70 330s-10 200 60 310'/><path d='M100 220h216'/></g></svg>") center/cover; }
+  .dim { inset: 0; background: rgba(0,0,0,.4); }
+  .search { left: 12px; right: 12px; top: 44px; height: 46px; background: #fff; border-radius: 999px; box-shadow: var(--shadow); display: flex; align-items: center; padding: 0 16px; color: var(--muted); }
+  .tabbar { left: 12px; right: 12px; bottom: 12px; background: rgba(255,255,255,.88); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border: 1px solid var(--line); border-radius: 26px; box-shadow: 0 6px 24px rgba(15,23,42,.14); display: flex; align-items: center; padding: 5px 6px; font-size: 10px; color: var(--muted); }
+  .tabbar div { flex: 1; text-align: center; padding: 4px 0; font-weight: 600; } .tabbar div.on { color: var(--accent); } .tabbar i { display: block; font-style: normal; font-size: 18px; line-height: 22px; }
+  .tabbar div.fab { flex: 0 0 46px; height: 46px; border-radius: 16px; background: var(--accent); color: #fff; display: grid; place-items: center; padding: 0; box-shadow: 0 4px 12px rgba(13,148,136,.45); } .tabbar div.fab i { font-size: 22px; line-height: 1; }
+  .lm { width: 98px; background: rgba(255,255,255,.88); backdrop-filter: blur(14px); border: 1px solid var(--line); border-radius: 22px; padding: 4px; box-shadow: 0 6px 24px rgba(15,23,42,.14); font-size: 12.5px; font-weight: 600; color: var(--muted); }
+  .lm div { padding: 8px 12px; border-radius: 18px; line-height: 1.2; } .lm div.on { background: var(--accent); color: #fff; box-shadow: 0 3px 10px rgba(13,148,136,.4); } .lm small { display: block; font-size: 10px; font-weight: 500; opacity: .85; }
+  .lmf { width: 150px; background: rgba(255,255,255,.92); backdrop-filter: blur(14px); border: 1px solid var(--line); border-radius: 18px; padding: 5px; box-shadow: 0 6px 24px rgba(15,23,42,.14); font-size: 12.5px; font-weight: 600; }
+  .lmf div { padding: 8px 10px; border-radius: 12px; } .lmf div.on { color: var(--accent); background: #e6f4f2; } .lmf div.all { color: var(--muted); }
+  .pin { position: relative; background: #fff; padding: 4px 9px; border-radius: 999px; font-size: 11px; font-weight: 650; box-shadow: 0 1px 2px rgba(15,23,42,.16), 0 4px 12px rgba(15,23,42,.12); border: 1px solid rgba(15,23,42,.07); white-space: nowrap; }
+  .pin::after { content: ''; position: absolute; left: 50%; bottom: -4px; width: 7px; height: 7px; background: inherit; border-right: 1px solid rgba(15,23,42,.07); border-bottom: 1px solid rgba(15,23,42,.07); transform: translateX(-50%) rotate(45deg); }
+  .nav { left: 0; right: 0; bottom: 0; height: 64px; background: #fff; border-top: 1px solid var(--line); display: flex; justify-content: space-around; padding-top: 8px; font-size: 10px; color: var(--muted); }
+  .nav div { text-align: center; } .nav div.on { color: var(--accent); font-weight: 700; } .nav i { display: block; font-style: normal; font-size: 18px; line-height: 22px; }
+  .sheet { left: 0; right: 0; bottom: 0; background: #fff; border-radius: 22px 22px 0 0; padding: 8px 18px 22px; box-shadow: var(--shadow); }
+  .grab { width: 38px; height: 4px; background: var(--line); border-radius: 2px; margin: 0 auto 14px; }
+  .title { font-size: 19px; font-weight: 800; letter-spacing: -.01em; } .muted { color: var(--muted); } .small { font-size: 12px; }
+  .btn { padding: 12px; border-radius: 12px; font-weight: 700; text-align: center; font-size: 13px; display: block; } .btn.p { background: var(--accent); color: #fff; } .btn.g { border: 1px solid var(--line); } .btn.d { background: #14161a; color: #fff; }
+  .row { display: flex; gap: 8px; align-items: center; } .sp { justify-content: space-between; }
+  .card { border: 1px solid var(--line); border-radius: 14px; padding: 12px; margin-top: 10px; background: #fff; }
+  .ph { background: #cbd5e1 center/cover; border-radius: 10px; flex: none; }
+  .st { font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; display: inline-block; } .st.ok { background: #dcfce7; color: var(--ok); } .st.wr { background: #fef3c7; color: var(--warn); } .st.bd { background: #fee2e2; color: var(--bad); } .st.gr { background: #e5e7eb; color: #374151; } .st.bl { background: #dbeafe; color: #1d4ed8; }
+  .chip { border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; font-size: 12px; display: inline-block; } .chip.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .field { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-top: 10px; } .field small { display: block; color: var(--muted); font-size: 11px; }
+  .stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-top: 10px; } .stats div { background: var(--soft); border-radius: 12px; padding: 10px 6px; text-align: center; font-size: 11px; color: var(--muted); } .stats b { display: block; font-size: 18px; color: var(--fg); }
+  .bars { display: flex; align-items: flex-end; gap: 5px; height: 70px; margin-top: 8px; } .bars i { flex: 1; background: #99d5cd; border-radius: 3px 3px 0 0; } .bars i.hi { background: var(--accent); }
+  .av { width: 40px; height: 40px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-weight: 800; flex: none; }
+  .otp { display: flex; gap: 8px; margin-top: 14px; } .otp i { flex: 1; height: 46px; border: 1px solid var(--line); border-radius: 10px; display: grid; place-items: center; font-style: normal; font-weight: 800; font-size: 18px; }
+  .lock { position: absolute; right: 12px; font-size: 14px; }
+  .bub { max-width: 78%; padding: 8px 12px; border-radius: 14px; margin-top: 8px; font-size: 13px; background: var(--soft); } .bub.me { margin-left: auto; background: var(--accent); color: #fff; }
+  .step { display: flex; gap: 4px; margin: 8px 0 14px; } .step i { flex: 1; height: 4px; border-radius: 2px; background: var(--line); } .step i.on { background: var(--accent); }
+  .tog { width: 36px; height: 20px; border-radius: 999px; background: var(--accent); position: relative; display: inline-block; } .tog::after { content:""; position:absolute; right:2px; top:2px; width:16px; height:16px; background:#fff; border-radius:50%; }
+
+  /* matrix */
+  .tbl { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #fff; max-width: 1040px; } table { width: 100%; border-collapse: collapse; }
+  th { text-align: center; font-size: 12px; padding: 10px 8px; background: var(--soft); border-bottom: 1px solid var(--line); } th:first-child, td:first-child { text-align: left; padding-left: 14px; }
+  td { text-align: center; padding: 8px; border-bottom: 1px solid var(--line); } tr:last-child td { border: 0; } td.y { color: var(--ok); font-weight: 700; } td.n { color: #cbd5e1; } td.l { color: var(--warn); font-size: 12px; }
+
+  /* admin role windows */
+  .win { width: 1000px; max-width: 100%; height: 400px; border-radius: 12px; border: 1px solid #cfd4da; background: #fff; overflow: hidden; display: flex; box-shadow: 0 10px 30px rgba(0,0,0,.08); font-size: 13px; }
+  .side { width: 190px; background: #14161a; color: #cbd5e1; padding: 14px 10px; flex: none; } .side .logo { color: #fff; font-weight: 800; padding: 2px 10px 12px; }
+  .side a { padding: 7px 10px; border-radius: 8px; display: flex; justify-content: space-between; } .side a.on { background: #24282f; color: #fff; } .side a.off { color: #4b5563; }
+  .main { flex: 1; background: var(--soft); padding: 16px 18px; } .main h3 { margin-bottom: 10px; }
+  .bnr { background: #fef3c7; color: #92400e; border-radius: 8px; padding: 8px 12px; font-size: 12px; margin-bottom: 12px; }
+  .t2 { background: #fff; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; } .t2 table td, .t2 table th { text-align: left; padding: 8px 12px; } .t2 th { background: #fff; color: var(--muted); font-weight: 600; font-size: 11px; }
+  .radio { display: flex; gap: 10px; align-items: center; padding: 11px 0; border-top: 1px solid var(--line); } .radio i { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #cbd5e1; flex: none; } .radio.on i { border-color: var(--accent); background: radial-gradient(var(--accent) 45%, #fff 50%); }
+  .big-ico { width: 96px; height: 96px; border-radius: 50%; background: var(--soft); display: grid; place-items: center; font-size: 40px; margin: 0 auto 14px; } .c { text-align: center; } .btn.r { border: 1px solid #fecaca; color: var(--bad); }
+
+  .day { display: grid; grid-template-columns: repeat(5,1fr); gap: 6px; } .day div { border: 1px solid var(--line); border-radius: 12px; padding: 8px 0; text-align: center; font-size: 11px; color: var(--muted); } .day b { display: block; font-size: 16px; color: var(--fg); } .day .on { background: var(--accent); color: #fff; border-color: var(--accent); } .day .on b { color: #fff; }
+  .slots { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; margin-top: 8px; } .slots div { border: 1px solid var(--line); border-radius: 10px; padding: 8px 0; text-align: center; font-size: 12px; } .slots .on { border-color: var(--accent); background: #e3f2f0; color: var(--accent); font-weight: 700; }
+  .nb { display: flex; justify-content: space-between; padding: 7px 0; border-top: 1px solid var(--line); font-size: 12px; }
+  .browser { width: 1040px; max-width: 100%; border-radius: 12px; border: 1px solid #cfd4da; background: #fff; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,.08); flex: none; }
+  .url { background: #eef0f3; padding: 8px 14px; display: flex; gap: 8px; align-items: center; } .url i { width: 10px; height: 10px; border-radius: 50%; background: #cbd0d6; } .url span { flex: 1; background: #fff; border-radius: 6px; padding: 3px 12px; color: var(--muted); font-size: 12px; }
+  .dtop { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; border-bottom: 1px solid var(--line); } .dtop b { font-size: 17px; font-weight: 800; } .dtop b i { color: var(--accent); font-style: normal; }
+  .d2 { display: grid; grid-template-columns: 1.6fr 1fr; gap: 12px; margin-top: 12px; }
+  .dtbl { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #fff; } .dtbl table { width: 100%; border-collapse: collapse; } .dtbl th { text-align: left; font-size: 11px; color: var(--muted); font-weight: 600; padding: 8px 10px; border-bottom: 1px solid var(--line); } .dtbl td { padding: 9px 10px; border-bottom: 1px solid var(--line); } .dtbl tr:last-child td { border: 0; }
+  .kan { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-top: 12px; } .kan .col { background: var(--soft); border-radius: 12px; padding: 10px; min-height: 330px; }
+  .tablet { width: 860px; height: 560px; border: 10px solid #14161a; border-radius: 28px; overflow: hidden; position: relative; background: #fff; display: flex; flex: none; }
+  .rail { width: 64px; background: #fff; border-right: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; gap: 18px; padding-top: 18px; font-size: 10px; color: var(--muted); flex: none; } .rail div { text-align: center; } .rail i { display: block; font-style: normal; font-size: 20px; } .rail .on { color: var(--accent); font-weight: 700; }
+  .pane { width: 300px; border-right: 1px solid var(--line); padding: 14px; overflow: hidden; flex: none; }
+  .wk { display: grid; grid-template-columns: repeat(7,1fr); gap: 6px; margin-top: 12px; } .wd { border: 1px solid var(--line); border-radius: 10px; min-height: 380px; padding: 6px; font-size: 11px; } .wd b { display: block; margin-bottom: 6px; } .ev { background: #e3f2f0; color: var(--accent); border-radius: 6px; padding: 4px 6px; margin-bottom: 4px; font-weight: 600; } .ev.w { background: #fef3c7; color: var(--warn); }
+</style>
+</head>
+<body>
+<h1>Nestmap — user types board</h1>
+<p class="sub">Screens for every role. Same visual style as the main app. Each section shows what that role sees that others don't.</p>
+
+<h2>Who can do what</h2>
+<div class="tbl" id="matrix"></div>
+
+<div id="out"></div>
+
+<script>
+/* ---------- helpers ---------- */
+const img = n => `background-image:url(https://picsum.photos/seed/${n}/200/150)`;
+const status = `<div class="status"><span>9:41</span><span>●●● 5G</span></div>`;
+const NAVS = {
+  guest: [["◉","Map",1],["♡","Saved"],["＋","Post"],["◔","Log in"]],
+  buyer: [["◉","Map",1],["♡","Saved"],["✉","Inbox"],["◔","Profile"]],
+  owner: [["◉","Map",1],["♡","Saved"],["▤","My homes"],["◔","Profile"]],
+  agent: [["◉","Map",1],["◔","Leads"],["▤","Listings"],["◔","Profile"]],
+};
+const nav = (role, active) => `<div class="tabbar">${NAVS[role].map(([i, t]) => `<div class="${t === active ? "on" : ""}"><i>${i}</i>${t}</div>`).join("")}</div>`;
+const phone = (t, s, inner) => `<div><div class="cap">${t}<small>${s}</small></div><div class="phone">${inner}</div></div>`;
+const page = (role, active, body) => `<div class="fill" style="background:#fff"></div>${status}<div class="scroll">${body}</div>${nav(role, active)}`;
+const bars = (a, hi) => `<div class="bars">${a.map((h, i) => `<i class="${i === hi ? "hi" : ""}" style="height:${h}%"></i>`).join("")}</div>`;
+const section = (name, role, desc, items) => `<h2>${name}<span class="role">${role}</span></h2><div class="desc">${desc}</div><div class="row8">${items.join("")}</div>`;
+const mapBase = `<div class="map"></div>${status}`;
+
+/* ---------- matrix ---------- */
+const M = [["Browse map, search, view details","y","y","y","y","y"],["Save homes and searches","l","y","y","y","–"],["Message agents / owners","l","y","y","y","–"],["Post a listing","l","n","y","y","–"],["Listings limit","–","–","3 free","Unlimited","–"],["Verified badge","–","–","n","y","–"],["Lead inbox and ratings","–","–","n","y","–"],["Boost a listing","–","–","paid","paid","–"],["Review / approve listings","–","–","–","–","Admin"],["Manage users and reports","–","–","–","–","Admin"]];
+document.getElementById("matrix").innerHTML = `<table><tr><th>Capability</th><th>Guest</th><th>Buyer</th><th>Owner</th><th>Agent</th><th>Admin team</th></tr>` +
+  M.map(r => `<tr>${r.map((c, i) => i === 0 ? `<td>${c}</td>` : `<td class="${c === "y" ? "y" : c === "n" ? "n" : "l"}">${c === "y" ? "✓" : c === "n" ? "✕" : c === "l" ? "Log in first" : c}</td>`).join("")}</tr>`).join("") + `</table>`;
+
+const out = [];
+
+/* ---------- GUEST ---------- */
+out.push(section("Guest", "Not logged in", "Can explore everything on the map. Save, message and post actions open a quick phone-number login instead of a hard wall.", [
+  phone("Browse as guest", "Full map access, no signup", `${mapBase}<div class="search">🔍&nbsp;Search area or city</div>
+    <div class="pin" style="left:90px;top:230px">₹1.2 Cr</div><div class="pin" style="left:200px;top:300px">₹85 L</div><div class="pin" style="left:120px;top:380px">₹1.6 Cr</div>
+    <div class="sheet" style="bottom:64px"><div class="grab"></div><div class="row"><div class="ph" style="width:72px;height:56px;${img("g1")}"></div><div><b>₹1.6 Cr</b><div class="muted small">3 bed · 24 Beach Rd</div></div><span style="margin-left:auto">♡</span></div></div>${nav("guest", "Map")}`),
+  phone("Login prompt", "Appears when a guest taps ♡ or Message", `${mapBase}<div class="dim"></div>
+    <div class="sheet"><div class="grab"></div><div class="title">Log in to save this home</div><div class="muted small" style="margin:4px 0 14px">Keep a shortlist and get price-drop alerts.</div>
+    <div class="field"><small>Phone number</small>+91 | 98•••• 1234</div><div class="btn p" style="margin-top:14px">Send OTP</div><div class="muted small" style="text-align:center;margin-top:12px">Continue browsing</div></div>`),
+  phone("OTP verify", "Same screen for signup and login", `<div class="fill" style="background:#fff"></div>${status}<div style="left:20px;right:20px;top:90px"><div class="title">Enter the code</div><div class="muted small">Sent to +91 98•••• 1234</div>
+    <div class="otp"><i>4</i><i>8</i><i>2</i><i>9</i><i></i><i></i></div><div class="btn p" style="margin-top:20px">Verify</div><div class="muted small" style="text-align:center;margin-top:12px">Resend in 0:24</div></div>`),
+]));
+
+/* ---------- BUYER ---------- */
+out.push(section("Buyer / renter", "Logged in", "Everything a guest has, plus a shortlist, saved searches with alerts, and an inbox for conversations with agents and owners.", [
+  phone("Saved searches & alerts", "Get notified when new homes match", page("buyer", "Profile", `<div class="title" style="margin:6px 0 4px">Saved searches</div>
+    ${[["2+ bed · Buy · under ₹1.2 Cr","Kozhikode","3 new"],["Rent · under ₹25k","Palayam","1 new"]].map(s => `<div class="card"><div class="row sp"><b>${s[0]}</b><span class="st ok">${s[2]}</span></div><div class="muted small">${s[1]}</div><div class="row sp" style="margin-top:8px"><span class="small">Price alerts</span><span class="tog"></span></div></div>`).join("")}
+    <div class="btn g" style="margin-top:12px">+ Save current search</div>`)),
+  phone("Inbox", "Conversations with agents / owners", page("buyer", "Inbox", `<div class="title" style="margin:6px 0 4px">Inbox</div>
+    ${[["Anil Kumar","24 Beach Rd","Yes, available. Saturday 11am?","5m","1"],["Fathima R.","12 Lake View St","Parking for 2 cars.","2h",""],["Owner · Joseph","3 Canal Rd","Thanks for your interest!","1d",""]].map(c => `<div class="row" style="padding:12px 0;border-top:1px solid var(--line)"><div class="av">${c[0][0]}</div><div style="flex:1;min-width:0"><div class="row sp"><b>${c[0]}</b><span class="muted small">${c[3]}</span></div><div class="muted small">${c[1]}</div><div class="small">${c[2]}</div></div>${c[4] ? '<span class="st bl">1</span>' : ""}</div>`).join("")}`)),
+  phone("Chat", "One thread per home", `<div class="fill" style="background:#fff"></div>${status}
+    <div style="left:0;right:0;top:34px;padding:10px 16px;border-bottom:1px solid var(--line)" class="row"><span>‹</span><div class="av" style="width:34px;height:34px">A</div><div><b>Anil Kumar</b><div class="muted small">24 Beach Rd · ₹1.6 Cr</div></div></div>
+    <div style="left:16px;right:16px;top:100px"><div class="bub me">Is this still available?</div><div class="bub">Yes! Would you like to visit Saturday 11am?</div><div class="bub me">Works for me 👍</div><div class="bub">Great, I'll share the exact location.</div></div>
+    <div style="left:12px;right:12px;bottom:14px" class="row"><div class="field" style="flex:1;margin:0;border-radius:999px">Type a message…</div><div class="av" style="width:42px;height:42px">➤</div></div>`),
+]));
+
+var fx = body => `<div class="fill" style="background:#fff"></div>${status}${body}`;
+out.push(section("Buyer · visits, reviews & chat", "Buyer", "After a visit is booked, buyers can track it, change it, rate the agent and use richer chat.", [
+  phone("My visits", "Upcoming and past", page("buyer", "Profile", `<div class="title" style="margin:6px 0">My visits</div><div style="margin-bottom:6px"><span class="chip on">Upcoming 2</span><span class="chip">Past 3</span></div>
+    ${[["Sat 18 Oct · 11:00","24 Beach Rd","Anil Kumar","Confirmed","ok","a1"],["Mon 20 Oct · 4:00","12 Lake View St","Fathima R.","Waiting for reply","wr","a2"]].map(v => `<div class="card"><div class="row"><div class="ph" style="width:64px;height:52px;${img(v[5])}"></div><div style="flex:1"><b>${v[0]}</b><div class="muted small">${v[1]} · ${v[2]}</div><span class="st ${v[4]}">${v[3]}</span></div></div><div class="row" style="margin-top:10px"><span class="chip">Reschedule</span><span class="chip">Cancel</span><span class="chip on">Directions</span></div></div>`).join("")}`)),
+  phone("Reschedule", "Agent proposed a new time", `${mapBase}<div class="dim"></div><div class="sheet"><div class="grab"></div><div class="title">Pick a new time</div><div class="card small" style="background:#fef3c7;border-color:#fde68a">Anil proposed <b>Sat 18 Oct · 4:00 pm</b></div><div class="row" style="margin:10px 0"><div class="btn p" style="flex:1">Accept 4:00</div><div class="btn g" style="flex:1">Suggest other</div></div><div class="day"><div><span>Fri</span><b>17</b></div><div class="on"><span>Sat</span><b>18</b></div><div><span>Sun</span><b>19</b></div><div><span>Mon</span><b>20</b></div><div><span>Tue</span><b>21</b></div></div><div class="slots"><div>10:00</div><div>11:00</div><div class="on">4:00</div><div>5:00</div></div></div>`),
+  phone("Rate your visit", "Appears the day after", fx(`<div style="left:20px;right:20px;top:80px" class="c"><div class="av" style="width:64px;height:64px;font-size:24px;margin:0 auto">A</div><div class="title" style="margin-top:10px">How was your visit with Anil?</div><div class="muted small">24 Beach Rd · Sat 18 Oct</div><div style="font-size:38px;margin:14px 0;letter-spacing:6px;color:#f59e0b">★★★★☆</div></div><div style="left:20px;right:20px;top:300px"><div class="muted small" style="margin-bottom:6px">What went well?</div><span class="chip on">On time</span><span class="chip on">Honest listing</span><span class="chip">Helpful</span><span class="chip">Responsive</span><div class="field" style="height:74px"><small>Comment (optional)</small>Property matched the photos.</div></div><div style="left:20px;right:20px;bottom:18px" class="btn p">Submit review</div>`)),
+  phone("Chat · attach & more", "Photos, location, block, report", fx(`<div style="left:0;right:0;top:34px;padding:10px 16px;border-bottom:1px solid var(--line)" class="row sp"><div class="row"><span>‹</span><div class="av" style="width:34px;height:34px">A</div><b>Anil Kumar</b></div><span>⋯</span></div>
+    <div style="right:14px;top:84px;background:#fff;border-radius:12px;box-shadow:var(--shadow);padding:6px 0;width:150px;font-size:13px"><div style="padding:9px 14px">View listing</div><div style="padding:9px 14px">Mute</div><div style="padding:9px 14px;color:var(--bad)">Block user</div><div style="padding:9px 14px;color:var(--bad)">Report</div></div>
+    <div style="left:16px;right:16px;top:150px"><div class="bub">Here's the floor plan.</div><div class="ph" style="width:150px;height:100px;margin-top:6px;${img("fp1")}"></div></div>
+    <div style="left:12px;right:12px;bottom:80px;background:#fff;border-radius:18px;box-shadow:var(--shadow);padding:14px;display:flex;justify-content:space-around;text-align:center;font-size:12px"><div><div class="circle" style="background:#e3f2f0">🖼</div>Photo</div><div><div class="circle" style="background:#e3f2f0">📍</div>Location</div><div><div class="circle" style="background:#e3f2f0">📄</div>Document</div><div><div class="circle" style="background:#e3f2f0">📅</div>Visit</div></div>
+    <div style="left:12px;right:12px;bottom:14px" class="row"><div class="av" style="width:42px;height:42px;background:#e5e7eb;color:#14161a">＋</div><div class="field" style="flex:1;margin:0;border-radius:999px">Type a message…</div><div class="av" style="width:42px;height:42px">➤</div></div>`)),
+]));
+
+/* ---------- OWNER ---------- */
+out.push(section("Owner", "Individual seller / landlord", "A buyer becomes an owner the first time they post. The free plan allows 3 listings, with simple stats on each.", [
+  phone("My homes", "Dashboard of their listings", page("owner", "My homes", `<div class="row sp" style="margin:6px 0"><div class="title">My homes</div><span class="chip on">＋ New</span></div>
+    <div class="stats"><div><b>2</b>Live</div><div><b>318</b>Views</div><div><b>9</b>Enquiries</div></div>
+    ${[["19 Garden Ln","₹14k/mo","Live","ok","o1"],["3 Canal Rd","₹1.1 Cr","Pending review","wr","o2"]].map(l => `<div class="card row"><div class="ph" style="width:70px;height:56px;${img(l[4])}"></div><div style="flex:1"><b>${l[0]}</b><div class="muted small">${l[1]}</div><span class="st ${l[3]}">${l[2]}</span></div><span class="muted">⋯</span></div>`).join("")}
+    <div class="card small muted">Free plan · 2 of 3 listings used</div>`)),
+  phone("Listing performance", "Views and enquiries", page("owner", "My homes", `<div class="row"><span>‹</span><b style="font-size:16px">19 Garden Ln</b><span class="st ok" style="margin-left:auto">Live</span></div>
+    <div class="stats"><div><b>212</b>Views</div><div><b>31</b>Saves</div><div><b>7</b>Enquiries</div></div><div class="card"><b class="small">Views · last 7 days</b>${bars([30,45,38,60,52,80,70], 5)}</div>
+    <div class="card row sp"><span>Mark as rented</span><span>›</span></div><div class="card row sp"><span>Edit details &amp; photos</span><span>›</span></div>
+    <div class="card row sp" style="border-color:var(--accent)"><span>🚀 Boost this listing</span><span class="st ok">₹299</span></div>`)),
+  phone("Post · step 2 of 3", "Photos and details", `<div class="fill" style="background:#fff"></div>${status}<div style="left:16px;right:16px;top:44px"><div class="row"><span>‹</span><b>New listing</b></div>
+    <div class="step"><i class="on"></i><i class="on"></i><i></i></div>
+    <div class="row" style="flex-wrap:wrap"><div class="ph" style="width:92px;height:70px;${img("p1")}"></div><div class="ph" style="width:92px;height:70px;${img("p2")}"></div><div class="ph" style="width:92px;height:70px;display:grid;place-items:center;border:1.5px dashed #9ca3af;background:#f9fafb">＋</div></div>
+    <div class="field"><small>Price</small>₹ 1,10,00,000</div><div class="row"><div class="field" style="flex:1"><small>Bedrooms</small>3</div><div class="field" style="flex:1"><small>Bathrooms</small>2</div></div>
+    <div class="field" style="height:70px"><small>Description</small>Bright, airy, close to the beach…</div></div><div style="left:16px;right:16px;bottom:16px" class="btn p">Next</div>`),
+  phone("Post · step 3 of 3", "Review and submit", `<div class="fill" style="background:#fff"></div>${status}<div style="left:16px;right:16px;top:44px"><div class="row"><span>‹</span><b>Review</b></div><div class="step"><i class="on"></i><i class="on"></i><i class="on"></i></div>
+    <div class="ph" style="height:120px;${img("p1")}"></div><div class="row sp" style="margin-top:10px"><b class="title">₹1.1 Cr</b><span class="chip">Edit</span></div><div class="muted">3 bed · 2 bath · 3 Canal Rd</div>
+    <div class="card small">✅ 4 photos<br>✅ Map pin set<br>✅ Phone verified</div><div class="card small muted">Our team reviews new listings, usually within 1 hour.</div></div><div style="left:16px;right:16px;bottom:16px" class="btn p">Submit for review</div>`),
+]));
+
+const full = body => `<div class="fill" style="background:#fff"></div>${status}${body}`;
+/* ============ 5. OWNER FRESHNESS ============ */
+out.push(section("Listing freshness", "Owner", "Keeps the map trustworthy: listings expire unless the owner confirms, and sold homes are clearly marked.", [
+  phone("Renewal reminder", "Push and in-app, day 25", `<div class="fill" style="background:#f1f5f9"></div>${status}<div style="left:12px;right:12px;top:50px;background:#fff;border-radius:16px;padding:12px;box-shadow:var(--shadow)"><div class="row"><div class="av" style="width:30px;height:30px">N</div><div><b class="small">Nestmap</b><div class="muted small">now</div></div></div><div style="margin-top:8px"><b>Is 19 Garden Ln still available?</b><div class="muted small">Confirm within 5 days or it will be hidden from the map.</div></div></div>`),
+  phone("Confirm availability", "One tap to keep it live", page("owner", "My homes", `<div class="title" style="margin:6px 0">Still available?</div><div class="card row"><div class="ph" style="width:70px;height:56px;${img("o1")}"></div><div><b>19 Garden Ln</b><div class="muted small">₹14k/mo · live 25 days</div><span class="st wr">Expires in 5 days</span></div></div>
+    <div class="btn p" style="margin-top:16px">Yes, still available</div><div class="btn g" style="margin-top:8px">Update price</div><div class="btn g" style="margin-top:8px">Mark as rented</div><div class="muted small c" style="margin-top:12px">Hidden listings can be restored any time.</div>`)),
+  phone("Mark sold / rented", "Closes the loop", `${mapBase}<div class="dim"></div><div class="sheet"><div class="grab"></div><div class="title">Mark as rented</div><div class="muted small" style="margin-bottom:10px">Buyers who saved this home will be told.</div>
+    <div class="radio on"><i></i>Rented through Nestmap</div><div class="radio"><i></i>Rented elsewhere</div><div class="radio"><i></i>No longer available</div><div class="btn p" style="margin-top:14px">Confirm</div></div>`),
+  phone("Rental fields", "Post flow, rent only", full(`<div style="left:16px;right:16px;top:44px"><div class="row"><span>‹</span><b>Rental details</b></div><div class="step"><i class="on"></i><i class="on"></i><i></i></div>
+    <div class="field"><small>Monthly rent</small>₹ 14,000</div><div class="row"><div class="field" style="flex:1"><small>Deposit</small>₹ 50,000</div><div class="field" style="flex:1"><small>Maintenance</small>₹ 500</div></div>
+    <div class="field"><small>Furnishing</small>Semi-furnished ▾</div><div class="field"><small>Available from</small>1 Nov 2026</div>
+    <div class="muted small" style="margin:12px 0 4px">Preferred tenants</div><span class="chip on">Family</span><span class="chip on">Bachelors</span><span class="chip">Company</span>
+    <div class="row sp" style="padding:12px 0;border-top:1px solid var(--line);margin-top:8px"><span>Pets allowed</span><span class="tog"></span></div></div><div style="left:16px;right:16px;bottom:16px" class="btn p">Next</div>`)),
+]));
+
+
+/* ---------- AGENT ---------- */
+out.push(section("Agent", "Verified professional", "An upgrade on a normal account. Adds a verification flow, a lead inbox, unlimited listings, a public profile and ratings.", [
+  phone("Become an agent", "Verification flow", `<div class="fill" style="background:#fff"></div>${status}<div style="left:16px;right:16px;top:44px"><div class="row"><span>‹</span><b>Become a verified agent</b></div><div class="step"><i class="on"></i><i></i><i></i></div>
+    <div class="field"><small>Agency / business name</small>Kumar Realty</div><div class="field"><small>Licence number</small>KL-RE-20931</div>
+    <div class="card row sp"><span>Government ID</span><span class="st ok">Uploaded</span></div><div class="card row sp"><span>Licence photo</span><span class="st wr">Add</span></div><div class="card row sp"><span>Selfie check</span><span class="st wr">Add</span></div>
+    <div class="muted small" style="margin-top:10px">Reviewed in 1–2 working days. You get a verified badge once approved.</div></div><div style="left:16px;right:16px;bottom:16px" class="btn p">Submit for verification</div>`),
+  phone("Agent dashboard", "Leads, listings, rating", page("agent", "Leads", `<div class="row"><div class="av">A</div><div><b>Anil Kumar</b> <span class="st ok">✓ Verified</span><div class="muted small">★ 4.7 · 38 listings</div></div></div>
+    <div class="stats"><div><b>12</b>New leads</div><div><b>52m</b>Avg reply</div><div><b>3</b>Viewings</div></div>
+    <div class="card"><b class="small">Leads · this week</b>${bars([40,55,35,70,62,90,75], 5)}</div>
+    <div class="card row sp"><span>Fathima R. · 12 Lake View</span><span class="st wr">New</span></div><div class="card row sp"><span>Nisha P. · 24 Beach Rd</span><span class="st bl">Viewing</span></div>`)),
+  phone("Lead pipeline", "Track every enquiry", page("agent", "Leads", `<div class="title" style="margin:6px 0">Leads</div><div class="row" style="margin-bottom:6px"><span class="chip on">New 4</span><span class="chip">Contacted</span><span class="chip">Viewing</span><span class="chip">Closed</span></div>
+    ${[["Nisha P.","24 Beach Rd","Is this still available?","5m"],["Joseph T.","48 Park Ave","Can I visit Saturday?","40m"],["Sana M.","61 Main St","Any parking?","3h"]].map(l => `<div class="card"><div class="row sp"><b>${l[0]}</b><span class="muted small">${l[3]}</span></div><div class="muted small">${l[1]}</div><div class="small">${l[2]}</div><div class="row" style="margin-top:8px"><span class="chip on">Reply</span><span class="chip">Call</span><span class="chip">Schedule</span></div></div>`).join("")}`)),
+  phone("Public agent profile", "What buyers see", `<div class="fill" style="background:#fff"></div>${status}<div style="left:16px;right:16px;top:50px;text-align:center"><div class="av" style="width:72px;height:72px;margin:0 auto;font-size:28px">A</div><div class="title" style="margin-top:8px">Anil Kumar</div><div class="muted small">Kumar Realty · Kozhikode</div>
+    <div style="margin:6px"><span class="st ok">✓ Verified agent</span></div><div class="stats"><div><b>★ 4.7</b>32 reviews</div><div><b>38</b>Listings</div><div><b>~1 hr</b>Reply</div></div>
+    <div style="text-align:left"><div class="card small">★★★★★ "Quick replies, honest listing." <span class="muted">— Nisha P.</span></div><div class="card small">★★★★☆ "Helpful with paperwork." <span class="muted">— Joseph T.</span></div>
+    <div class="row" style="margin-top:12px"><div class="ph" style="flex:1;height:70px;${img("a1")}"></div><div class="ph" style="flex:1;height:70px;${img("a2")}"></div></div></div></div>
+    <div style="left:16px;right:16px;bottom:16px" class="row"><div class="btn g" style="flex:1">Message</div><div class="btn p" style="flex:1">Call</div></div>`),
+  phone("Agent Pro plan", "Upgrade and boosts", page("agent", "Profile", `<div class="title" style="margin:6px 0">Plans</div>
+    <div class="card"><b>Free</b><div class="muted small">3 listings · basic profile</div></div>
+    <div class="card" style="border:2px solid var(--accent)"><div class="row sp"><b>Agent Pro</b><span class="st ok">Current</span></div><div class="big" style="font-weight:800;font-size:20px">₹999 <span class="muted small">/ month</span></div><div class="small muted">Unlimited listings · verified badge · lead inbox · analytics</div></div>
+    <div class="card"><b>Boost a listing</b><div class="muted small">Top of the map for 7 days</div><div class="row sp" style="margin-top:6px"><b>₹299</b><span class="chip on">Boost</span></div></div>`)),
+]));
+
+/* ============ 6. MONEY ============ */
+out.push(section("Payments · boosts & Agent Pro", "Owner & agent", "Simple UPI-first checkout for boosts and Agent Pro, with GST receipts.", [
+  phone("Checkout", "UPI first", full(`<div style="left:16px;right:16px;top:44px"><div class="row"><span>‹</span><b>Checkout</b></div><div class="card"><div class="row sp"><span>Boost · 19 Garden Ln</span><b>₹299</b></div><div class="muted small">7 days at the top of the map</div><div class="row sp small" style="margin-top:8px"><span class="muted">GST 18%</span><span>₹54</span></div><div class="row sp" style="margin-top:6px;padding-top:8px;border-top:1px solid var(--line)"><b>Total</b><b>₹353</b></div></div>
+    <div class="radio on"><i></i><b>UPI</b><span class="muted small">GPay · PhonePe · Paytm</span></div><div class="radio"><i></i>Card</div><div class="radio"><i></i>Net banking</div><div class="field"><small>UPI ID</small>aghil@okaxis</div></div><div style="left:16px;right:16px;bottom:16px" class="btn p">Pay ₹353</div>`)),
+  phone("Payment done", "Receipt and next step", full(`<div style="left:24px;right:24px;top:130px" class="c"><div class="big-ico" style="background:#dcfce7">✓</div><div class="title">Boost is live</div><div class="muted" style="margin:8px 0 16px">19 Garden Ln is now at the top of the map until 24 Oct.</div>
+    <div class="card" style="text-align:left"><div class="row sp small"><span class="muted">Receipt</span><b>#NM-20418</b></div><div class="row sp small" style="margin-top:6px"><span class="muted">Paid</span><b>₹353 via UPI</b></div></div><div class="btn g" style="margin-top:14px">Download GST invoice</div><div class="btn p" style="margin-top:8px">Done</div></div>`)),
+]));
+
+
+out.push(section("Owner & agent · requests, edits & rejections", "Owner & agent", "Handling visit requests, understanding a rejection, and editing or resuming a listing.", [
+  phone("Visit requests", "Accept, decline or propose", page("owner", "My homes", `<div class="title" style="margin:6px 0">Visit requests · 3</div>
+    ${[["Nisha P.","24 Beach Rd","Sat 18 Oct · 11:00"],["Joseph T.","48 Park Ave","Sun 19 Oct · 10:00"],["Sana M.","61 Main St","Mon 20 Oct · 5:00"]].map(v => `<div class="card"><div class="row sp"><b>${v[0]}</b><span class="st wr">New</span></div><div class="muted small">${v[1]}</div><div style="margin:4px 0"><b class="small">${v[2]}</b></div><div class="row"><span class="chip on">Accept</span><span class="chip">Propose time</span><span class="chip">Decline</span></div></div>`).join("")}`)),
+  phone("Visit calendar", "Agent's week at a glance", page("agent", "Leads", `<div class="row sp" style="margin:6px 0"><div class="title">Oct 2026</div><span class="chip on">Week</span></div><div class="day" style="grid-template-columns:repeat(7,1fr);margin-bottom:8px"><div><span>M</span><b>13</b></div><div><span>T</span><b>14</b></div><div><span>W</span><b>15</b></div><div><span>T</span><b>16</b></div><div><span>F</span><b>17</b></div><div class="on"><span>S</span><b>18</b></div><div><span>S</span><b>19</b></div></div>
+    ${[["11:00","Nisha P.","24 Beach Rd","ok"],["1:30","Joseph T.","48 Park Ave","ok"],["4:00","Sana M.","61 Main St","wr"]].map(e => `<div class="row" style="padding:10px 0;border-top:1px solid var(--line)"><b style="width:50px">${e[0]}</b><div style="flex:1"><b>${e[1]}</b><div class="muted small">${e[2]}</div></div><span class="st ${e[3]}">${e[3] === "ok" ? "Confirmed" : "Pending"}</span></div>`).join("")}<div class="btn g" style="margin-top:10px">Set my available hours</div>`)),
+  phone("Listing rejected", "Reason and what to fix", page("owner", "My homes", `<div class="row"><span>‹</span><b style="font-size:16px">12 Lake View St</b></div><div class="card" style="background:#fef2f2;border-color:#fecaca"><b style="color:var(--bad)">Not published</b><div class="small" style="margin-top:4px">Our team couldn't approve this listing.</div></div>
+    <div class="title" style="font-size:15px;margin:14px 0 4px">What to fix</div><div class="card small">📷 <b>Photos don't match the address.</b> Upload photos of this property.</div><div class="card small">📍 <b>Map pin is 2 km away.</b> Move the pin to the correct spot.</div><div class="card small" style="background:#f6f7f9">💬 Moderator note: "Please add the floor number."</div>
+    <div class="btn p" style="margin-top:14px">Edit &amp; resubmit</div><div class="btn g" style="margin-top:8px">Contact support</div>`)),
+  phone("Edit live listing", "Some changes need review", page("owner", "My homes", `<div class="row sp"><span>‹</span><b>Edit 19 Garden Ln</b><span class="muted small">Save</span></div><div class="card small" style="background:#e3f2f0;border-color:#b7e4de">✅ Price, description and availability update <b>instantly</b>.<br>🔎 Photos, address and map pin are <b>re-reviewed</b> (about 1 hour).</div>
+    <div class="field"><small>Price · updates instantly</small>₹ 14,000</div><div class="field"><small>Description · updates instantly</small>Bright, airy, close to…</div><div class="field"><small>Photos · needs review</small>4 photos ✎</div><div class="field"><small>Address &amp; pin · needs review</small>19 Garden Ln 📍</div><div class="btn r" style="margin-top:14px">Unpublish listing</div>`)),
+  phone("Drafts", "Pick up where you left off", page("owner", "My homes", `<div class="row sp" style="margin:6px 0"><div class="title">My homes</div></div><div style="margin-bottom:6px"><span class="chip">Live 2</span><span class="chip on">Drafts 2</span><span class="chip">Closed</span></div>
+    ${[["3 Canal Rd","Step 2 of 3 · photos added","66","d1"],["Untitled listing","Step 1 of 3 · basics","20","d2"]].map(d => `<div class="card"><div class="row"><div class="ph" style="width:64px;height:52px;${img(d[3])}"></div><div style="flex:1"><b>${d[0]}</b><div class="muted small">${d[1]}</div></div></div><div style="height:5px;background:var(--line);border-radius:3px;margin:10px 0"><div style="height:5px;width:${d[2]}%;background:var(--accent);border-radius:3px"></div></div><div class="row"><span class="chip on">Continue</span><span class="chip">Delete</span></div></div>`).join("")}`)),
+  phone("Verification not approved", "Agent can fix and retry", page("agent", "Profile", `<div class="title" style="margin:6px 0">Verification</div><div class="card" style="background:#fef2f2;border-color:#fecaca"><b style="color:var(--bad)">Not approved yet</b><div class="small" style="margin-top:4px">We need a clearer licence photo.</div></div>
+    <div class="card row sp"><span>Government ID</span><span class="st ok">Approved</span></div><div class="card row sp"><span>Licence photo</span><span class="st bd">Re-upload</span></div><div class="card row sp"><span>Selfie check</span><span class="st ok">Approved</span></div><div class="btn p" style="margin-top:14px">Upload new licence photo</div><div class="muted small c" style="margin-top:10px">You can still post as an owner meanwhile.</div>`)),
+]));
+
+const browser = (url, body, cap) => `<div><div class="cap" style="text-align:left">${cap}</div><div class="browser"><div class="url"><i></i><i></i><i></i><span>${url}</span></div>${body}</div></div>`;
+const tablet = (cap, sub, inner) => `<div><div class="cap" style="text-align:left">${cap}<small>${sub}</small></div><div class="tablet">${inner}</div></div>`;
+const dhd = `<div class="dtop"><b>Nest<i>map</i></b><div class="row"><span class="muted">Map</span><span class="muted">Saved</span><b>My homes</b><span class="muted">Leads</span><span class="av" style="width:30px;height:30px">A</span></div></div>`;
+out.push(`<h2>Owner &amp; agent on larger screens<span class="role">Desktop · tablet</span></h2><div class="desc">Posting and lead handling are far easier on a big screen, so these roles get full dashboards on the website.</div><div class="grid">
+${browser("nestmap.app/dashboard", `${dhd}<div style="padding:16px 22px;height:440px;overflow:hidden"><div class="row sp"><div class="title">My homes</div><span class="btn p" style="padding:8px 16px">＋ New listing</span></div><div class="stats" style="grid-template-columns:repeat(4,1fr)"><div><b>2</b>Live</div><div><b>318</b>Views · 7d</div><div><b>9</b>Enquiries</div><div><b>3</b>Visit requests</div></div>
+  <div class="d2"><div class="dtbl"><table><tr><th>Listing</th><th>Status</th><th>Views</th><th>Saves</th><th>Expires</th><th></th></tr>${[["19 Garden Ln","Live","ok","212","31","5 days"],["3 Canal Rd","Pending review","wr","—","—","—"],["7 Hill Rd","Rejected","bd","—","—","—"]].map(r => `<tr><td><b>${r[0]}</b></td><td><span class="st ${r[2]}">${r[1]}</span></td><td>${r[3]}</td><td>${r[4]}</td><td>${r[5]}</td><td class="muted">⋯</td></tr>`).join("")}</table></div>
+  <div class="card" style="margin:0"><b>Visit requests</b>${[["Nisha P.","Sat 11:00"],["Joseph T.","Sun 10:00"]].map(v => `<div class="row sp" style="padding:8px 0;border-top:1px solid var(--line);margin-top:6px"><span>${v[0]}<div class="muted small">${v[1]}</div></span><span class="row"><span class="chip on">✓</span><span class="chip">✕</span></span></div>`).join("")}</div></div></div>`, "Owner · desktop dashboard")}
+${browser("nestmap.app/leads", `${dhd}<div style="padding:16px 22px;height:440px;overflow:hidden"><div class="row sp"><div class="title">Leads</div><div class="row"><span class="chip on">Board</span><span class="chip">List</span></div></div><div class="kan">${[["New",4,[["Nisha P.","24 Beach Rd"],["Sana M.","61 Main St"]]],["Contacted",6,[["Rahul S.","7 Hill Rd"],["Meera K.","12 Lake View"]]],["Viewing",3,[["Joseph T.","48 Park Ave"]]],["Closed",9,[["Anil V.","19 Garden Ln"]]]].map(c => `<div class="col"><div class="row sp"><b>${c[0]}</b><span class="muted small">${c[1]}</span></div>${c[2].map(l => `<div class="card" style="margin-top:8px"><b>${l[0]}</b><div class="muted small">${l[1]}</div><div class="row" style="margin-top:6px"><span class="chip">Reply</span><span class="chip">Call</span></div></div>`).join("")}</div>`).join("")}</div></div>`, "Agent · desktop lead board")}
+${tablet("Tablet · visit calendar", "Week view with requests panel", `<div class="rail"><b style="color:var(--accent);font-size:16px">N</b><div><i>◉</i>Map</div><div><i>♡</i>Saved</div><div class="on"><i>▤</i>Work</div><div><i>◔</i>Me</div></div><div style="flex:1;padding:14px"><div class="row sp"><b style="font-size:17px">Week of 13 Oct</b><span class="chip on">Week</span></div><div class="wk">${["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d, i) => `<div class="wd"><b>${d} ${13 + i}</b>${i === 5 ? '<div class="ev">11:00 Nisha P.</div><div class="ev">1:30 Joseph T.</div><div class="ev w">4:00 Sana M.</div>' : i === 2 ? '<div class="ev">10:00 Fathima</div>' : i === 4 ? '<div class="ev w">3:00 Meera K.</div>' : ""}</div>`).join("")}</div></div><div class="pane" style="width:230px;border-left:1px solid var(--line);border-right:0"><b>Requests · 2</b>${[["Sana M.","Sat 4:00"],["Meera K.","Fri 3:00"]].map(v => `<div class="card"><b>${v[0]}</b><div class="muted small">${v[1]} · 61 Main St</div><div class="row" style="margin-top:6px"><span class="chip on">Accept</span><span class="chip">Move</span></div></div>`).join("")}</div>`)}
+${browser("nestmap.app/listings/import", `${dhd}<div style="padding:18px 24px;height:440px;overflow:hidden"><div class="title">Bulk import listings</div><div class="muted small">Add many homes at once from a spreadsheet (agents on Pro).</div><div class="step" style="margin:12px 0"><i class="on"></i><i class="on"></i><i></i></div>
+  <div class="row sp"><b>Step 2 · Check your data</b><span class="st wr">2 rows need fixing</span></div><div class="dtbl" style="margin-top:8px"><table><tr><th>Row</th><th>Address</th><th>Price</th><th>Beds</th><th>Lat/Lng</th><th>Check</th></tr>${[["1","24 Beach Rd","1.6 Cr","3","11.26, 75.78","ok","Ready"],["2","12 Lake View St","85 L","2","11.27, 75.79","ok","Ready"],["3","7 Hill Rd","—","4","11.25, 75.77","bd","Price missing"],["4","61 Main St","78 L","2","—","bd","Location missing"],["5","19 Garden Ln","14k/mo","2","11.28, 75.80","ok","Ready"]].map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td><td><span class="st ${r[5]}">${r[6]}</span></td></tr>`).join("")}</table></div>
+  <div class="row" style="margin-top:12px"><span class="btn g" style="padding:9px 18px">Download template</span><span class="btn g" style="padding:9px 18px">Fix errors</span><span class="btn p" style="padding:9px 22px">Import 3 ready rows</span></div><div class="muted small" style="margin-top:8px">Imported homes go through the same review as manual posts.</div></div>`, "Agent · bulk import from CSV")}
+</div>`);
+
+/* ---------- ADMIN ROLES ---------- */
+const adminWin = (role, items, banner, body) => `<div class="win"><div class="side"><div class="logo">Nest<span style="color:#2dd4bf">map</span> admin</div>
+  ${items.map(([n, s]) => `<a class="${s}">${n}${s === "off" ? "<span>🔒</span>" : ""}</a>`).join("")}<div style="margin-top:20px;padding:10px;border-top:1px solid #2b3038;font-size:12px"><b style="color:#fff">${role[0]}</b><br>${role[1]}</div></div>
+  <div class="main"><div class="bnr">${banner}</div>${body}</div></div>`;
+out.push(section("Admin team", "Staff", "Same dashboard, but each role only sees what it needs. Locked items are hidden or disabled. The super admin view is on the admin board.", [
+  adminWin(["Priya K.", "Moderator"], [["Dashboard","on"],["Listings",""],["Review queue",""],["Users",""],["Reports",""],["Agents",""],["Enquiries","off"],["Plans & payments","off"],["Admin team","off"]],
+    "Moderator · can review listings, handle reports and manage users. Payments and team settings are locked.",
+    `<h3>Review queue · 14</h3><div class="t2"><table><tr><th>Listing</th><th>Submitted by</th><th>Waiting</th><th></th></tr><tr><td><b>12 Lake View St</b></td><td>Fathima R.</td><td>2m</td><td><span class="st wr">Review</span></td></tr><tr><td><b>61 Main St</b></td><td>Fathima R.</td><td>9m</td><td><span class="st wr">Review</span></td></tr><tr><td><b>5 Rose Ave</b></td><td>Owner</td><td>21m</td><td><span class="st wr">Review</span></td></tr></table></div>`),
+  adminWin(["Vishnu M.", "Support"], [["Dashboard","on"],["Listings (read-only)",""],["Users (read-only)",""],["Enquiries",""],["Review queue","off"],["Reports","off"],["Plans & payments","off"],["Admin team","off"]],
+    "Support · can read listings and users, and help with enquiries. Cannot approve, suspend or delete.",
+    `<h3>Enquiries</h3><div class="t2"><table><tr><th>Buyer</th><th>Listing</th><th>Agent</th><th>Status</th></tr><tr><td><b>Sana M.</b></td><td>61 Main St</td><td>Fathima R.</td><td><span class="st bd">No reply 6h</span></td></tr><tr><td><b>Nisha P.</b></td><td>24 Beach Rd</td><td>Anil Kumar</td><td><span class="st wr">Waiting</span></td></tr></table></div>`),
+]));
+
+document.getElementById("out").innerHTML = out.join("");
+</script>
+</body>
+</html>
