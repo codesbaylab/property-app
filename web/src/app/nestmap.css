@@ -283,6 +283,13 @@
   .pacts { display: flex; gap: 10px; position: sticky; bottom: 0; padding: 12px 0 calc(env(safe-area-inset-bottom) + 92px); background: var(--bg); box-shadow: 0 -10px 14px -8px var(--bg); }
   .pacts .btn:disabled { opacity: .6; }
 
+  /* ---- agent application ---- */
+  .agperks .li { cursor: default; } .agdl { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 14px 0 0; font-size: 14px; } .agdl dt { color: var(--muted); } .agdl dd { margin: 0; font-weight: 600; }
+  .docs { display: grid; gap: 8px; } .doc { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg2); min-width: 0; }
+  .doc svg { width: 18px; height: 18px; flex: none; color: var(--accent); } .doc span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+  .doc button { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; flex: none; } .doc button svg { width: 14px; height: 14px; color: var(--muted); }
+  .docadd { display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; } .docadd svg { width: 18px; height: 18px; }
+
   /* ---- listing numbers ---- */
   .lstats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: 12px; }
   .lstats div { background: var(--bg2); border-radius: 12px; padding: 8px 4px; text-align: center; } .lstats b { display: block; font-size: 17px; } .lstats span { font-size: 11px; color: var(--muted); }

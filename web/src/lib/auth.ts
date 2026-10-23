@@ -10,6 +10,7 @@ export interface Account {
   city: string | null;
   adminRole: "super_admin" | "moderator" | "support" | null;
   verifiedAgent: boolean;
+  agentStatus: "none" | "pending" | "verified" | "rejected";
   listings: number;
 }
 
@@ -28,7 +29,7 @@ export function useAuth() {
     const r = (roles ?? {}) as { admin_role?: Account["adminRole"]; agent_status?: string; listings?: number };
     setAccount({
       id: session.user.id, email: session.user.email ?? null, name: profile?.name || session.user.email?.split("@")[0] || "You", city: profile?.city ?? null,
-      adminRole: r.admin_role ?? null, verifiedAgent: r.agent_status === "verified", listings: r.listings ?? 0,
+      adminRole: r.admin_role ?? null, verifiedAgent: r.agent_status === "verified", agentStatus: (r.agent_status as Account["agentStatus"]) ?? "none", listings: r.listings ?? 0,
     });
     setReady(true);
   }, []);
@@ -64,5 +65,8 @@ export function useAuth() {
     return data.session ? {} : { confirm: true };
   }, []);
 
-  return { account, ready, signIn, signUp, signOut };
+  /** Reloads the account, for after something changed its roles (such as sending an agent application). */
+  const refresh = useCallback(async () => { const { data } = await supabase().auth.getSession(); await load(data.session); }, [load]);
+
+  return { account, ready, signIn, signUp, signOut, refresh };
 }

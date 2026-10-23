@@ -51,14 +51,16 @@ export default function Users() {
 function UserModal({ user, onClose, onChanged }: { user: AdminUser; onClose: () => void; onChanged: () => void }) {
   const { canModerate, account, toast, refreshStats } = useAdmin();
   const [reason, setReason] = useState("");
+  const [declineReason, setDeclineReason] = useState("");
   const [busy, setBusy] = useState(false);
+  const application = useLoad(() => (user.agent_status === "none" ? Promise.resolve(null) : adminApi.agentApplication(user.id)), [user.id, user.agent_status]);
   const self = user.id === account.id;
   const locked = !canModerate || self;
 
-  const apply = async (change: { account?: string; agent?: string }, done: string) => {
+  const apply = async (change: { account?: string; agent?: string }, done: string, why = reason) => {
     setBusy(true);
     try {
-      const r = await adminApi.setUser(user.id, { ...change, reason });
+      const r = await adminApi.setUser(user.id, { ...change, reason: why });
       toast(r.listings_hidden ? `${done} ${r.listings_hidden} live listing${r.listings_hidden === 1 ? " was" : "s were"} hidden.` : done);
       refreshStats(); onChanged();
     } catch (e) { toast((e as Error).message); }
@@ -77,9 +79,18 @@ function UserModal({ user, onClose, onChanged }: { user: AdminUser; onClose: () 
       ) : (
         <>
           <h3 className="adm-h3">Agent verification</h3>
+          {application.data && (
+            <dl className="adm-dl">
+              <dt>Agency</dt><dd>{application.data.agency}</dd><dt>Licence no.</dt><dd>{application.data.licence_no ?? "—"}</dd>
+              <dt>City</dt><dd>{application.data.city}</dd><dt>Phone</dt><dd>{application.data.phone}</dd><dt>Sent</dt><dd>{ago(application.data.submitted_at)}</dd>
+              <dt>Documents</dt><dd>{application.data.docs.map(d => d.url ? <div key={d.url}><a href={d.url} target="_blank" rel="noreferrer">{d.name}</a></div> : null)}</dd>
+              {application.data.rejection_reason && <><dt>Declined because</dt><dd>{application.data.rejection_reason}</dd></>}
+            </dl>
+          )}
+          {user.agent_status === "pending" && <textarea className="adm-input" rows={2} placeholder="If declining, say what the agent should fix (they will see this)" aria-label="Reason for declining" value={declineReason} onChange={e => setDeclineReason(e.target.value)} />}
           <div className="adm-actions left">
             {user.agent_status !== "verified" && <button className="adm-btn primary" disabled={busy} onClick={() => apply({ agent: "verified" }, "Verified as an agent.")}>Verify as agent</button>}
-            {user.agent_status === "pending" && <button className="adm-btn" disabled={busy} onClick={() => apply({ agent: "rejected" }, "Agent request declined.")}>Decline request</button>}
+            {user.agent_status === "pending" && <button className="adm-btn" disabled={busy || declineReason.trim().length < 3} onClick={() => apply({ agent: "rejected" }, "Agent request declined.", declineReason)}>Decline request</button>}
             {user.agent_status === "verified" && <button className="adm-btn" disabled={busy} onClick={() => apply({ agent: "none" }, "Agent badge removed.")}>Remove agent badge</button>}
           </div>
           <h3 className="adm-h3">Account</h3>

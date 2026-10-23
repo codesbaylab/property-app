@@ -42,6 +42,21 @@ export interface ReportRow {
 export interface TeamMember { user_id: string; role: "super_admin" | "moderator" | "support"; name: string | null; email: string | null; last_sign_in_at: string | null; created_at: string }
 export interface AuditRow { id: number; action: string; actor_name: string | null; target_type: string; target_id: string | null; details: Record<string, unknown>; created_at: string }
 
+export interface AgentApplicationInfo { agency: string; licence_no: string | null; city: string; phone: string; rejection_reason: string | null; submitted_at: string; docs: { name: string; url: string }[] }
+
+/** An agent's application with short-lived links to the documents they uploaded. */
+async function agentApplication(userId: string): Promise<AgentApplicationInfo | null> {
+  const db = supabase();
+  const { data, error } = await db.from("agent_applications").select("agency, licence_no, city, phone, rejection_reason, submitted_at, docs").eq("user_id", userId).maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+  const docs = await Promise.all((data.docs as string[]).map(async (path, i) => {
+    const { data: signed } = await db.storage.from("agent-docs").createSignedUrl(path, 600);
+    return { name: `Document ${i + 1} (${path.split(".").pop()?.toUpperCase()})`, url: signed?.signedUrl ?? "" };
+  }));
+  return { ...data, docs } as AgentApplicationInfo;
+}
+
 async function rpc<T>(fn: string, args?: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase().rpc(fn, args);
   if (error) throw new Error(error.message);
@@ -57,6 +72,7 @@ export const adminApi = {
   listing: (id: string) => rpc<ListingDetail | null>("admin_listing_detail", { p_id: id }),
   review: (id: string, action: "approve" | "reject" | "request_changes" | "unpublish", reason?: string) =>
     rpc<{ ok: true }>("admin_review_listing", { p_id: id, p_action: action, p_reason: reason ?? null }),
+  agentApplication,
   users: (a: { search?: string; filter?: string; page?: number }) =>
     rpc<Paged<AdminUser>>("admin_users", { p_search: a.search || null, p_filter: a.filter || "all", p_limit: PAGE, p_offset: (a.page ?? 0) * PAGE }),
   setUser: (id: string, change: { account?: string; agent?: string; reason?: string }) =>

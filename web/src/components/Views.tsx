@@ -6,7 +6,7 @@ import { fmt, modeFor, priceFor, spec, type Listing, type Mode } from "@/lib/lis
 import type { ThemePref } from "@/lib/hooks";
 import type { Account } from "@/lib/auth";
 
-export type Page = "explore" | "saved" | "inbox" | "post" | "profile" | "visits";
+export type Page = "explore" | "saved" | "inbox" | "post" | "profile" | "visits" | "agent";
 
 function PropertyCard({ l, mode, saved, onToggle, onOpen }: { l: Listing; mode: Mode; saved: boolean; onToggle: (id: string) => void; onOpen: (id: string) => void }) {
   const m = modeFor(l, mode);
@@ -90,9 +90,11 @@ interface ProfileProps {
   signOut: () => Promise<void>;
   /** opens the visits screen; `todo` is how many visits wait on this person */
   onOpenVisits?: () => void; todo?: number;
+  /** opens the agent application / status screen */
+  onOpenAgent?: () => void;
 }
 
-export function ProfileView({ pref, onPref, onToast, account, canSignIn, signIn, signUp, signOut, onOpenVisits, todo = 0 }: ProfileProps) {
+export function ProfileView({ pref, onPref, onToast, account, canSignIn, signIn, signUp, signOut, onOpenVisits, todo = 0, onOpenAgent }: ProfileProps) {
   const [mode, setMode] = useState<"in" | "up">("in");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -189,6 +191,14 @@ export function ProfileView({ pref, onPref, onToast, account, canSignIn, signIn,
           <button className="li" onClick={onOpenVisits}>
             <div className="ic"><Icon name="clock" /></div><div className="tx"><b>Visits</b><small>Homes you want to see, and requests for yours</small></div>
             {todo > 0 && <i className="bdg inline">{todo}</i>}<Icon name="chevron" />
+          </button>
+        )}
+        {account && onOpenAgent && !account.adminRole && (
+          <button className="li" onClick={onOpenAgent}>
+            <div className="ic"><Icon name="verified" /></div>
+            <div className="tx"><b>{account.agentStatus === "verified" ? "Verified agent" : "Become an agent"}</b>
+              <small>{{ none: "Get a verified badge and post without limits", pending: "We're checking your application", verified: "Your badge shows on your listings", rejected: "Not approved yet. See what to fix" }[account.agentStatus]}</small></div>
+            {account.agentStatus === "pending" && <span className="tag">In review</span>}{account.agentStatus === "rejected" && <span className="tag bad">Needs changes</span>}<Icon name="chevron" />
           </button>
         )}
         {rows.filter(r => account || !r[3]).map(r => (

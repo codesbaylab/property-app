@@ -17,13 +17,14 @@ import { requestVisit, useVisitTodo } from "@/lib/visits";
 const MapView = dynamic(() => import("./MapView"), { ssr: false });
 const Chat = dynamic(() => import("./Chat"), { ssr: false });
 const Visits = dynamic(() => import("./Visits"), { ssr: false });
+const AgentApply = dynamic(() => import("./AgentApply"), { ssr: false });
 const PostFlow = dynamic(() => import("./PostFlow"), { ssr: false });
 
 type Sheet = null | "card" | "list" | "filter";
 const START: [number, number] = [75.7804, 11.2588]; // Kozhikode, until the browser tells us where the user is
 
 export default function Explore() {
-  const { account, ready, signIn, signUp, signOut } = useAuth();
+  const { account, ready, signIn, signUp, signOut, refresh } = useAuth();
   const { saved, toggle } = useSaved(account?.id ?? null);
   const { unread, refreshUnread } = useUnread(usingDatabase ? account?.id ?? null : null);
   const { todo, refreshTodo } = useVisitTodo(usingDatabase ? account?.id ?? null : null);
@@ -126,7 +127,7 @@ export default function Explore() {
 
   // With a database connected, saving, messaging and posting need an account. Guests only see Explore and Sign in.
   const gated = usingDatabase && !account;
-  const shownPage: Page = gated && (page === "saved" || page === "inbox" || page === "post" || page === "visits") ? "explore" : page;
+  const shownPage: Page = gated && (page === "saved" || page === "inbox" || page === "post" || page === "visits" || page === "agent") ? "explore" : page;
   const go = (p: Page) => { setPage(p); setChatId(null); setDetailId(null); closeAll(); };
   const needLogin = (msg: string) => { toast(msg); go("profile"); };
   const startChat = async (listingId: string) => {
@@ -213,7 +214,8 @@ export default function Explore() {
         {shownPage === "saved" && <SavedView items={savedItems} mode={mode} savedIds={saved} onToggle={toggleSave} onOpen={setDetailId} />}
         {shownPage === "inbox" && (account && usingDatabase ? <Chat account={account} openId={chatId} onOpen={setChatId} onToast={toast} onOpenListing={setDetailId} onRead={refreshUnread} /> : <InboxView />)}
         {shownPage === "post" && (account ? <PostFlow account={account} dark={dark} onToast={toast} onOpen={setDetailId} onOpenVisits={usingDatabase ? () => go("visits") : undefined} visitTodo={todo} /> : <PostView />)}
-        {shownPage === "profile" && <ProfileView pref={pref} onPref={setPref} onToast={toast} account={account} canSignIn={usingDatabase} signIn={signIn} signUp={signUp} signOut={signOut} onOpenVisits={usingDatabase ? () => go("visits") : undefined} todo={todo} />}
+        {shownPage === "profile" && <ProfileView pref={pref} onPref={setPref} onToast={toast} account={account} canSignIn={usingDatabase} signIn={signIn} signUp={signUp} signOut={signOut} onOpenVisits={usingDatabase ? () => go("visits") : undefined} todo={todo} onOpenAgent={usingDatabase ? () => go("agent") : undefined} />}
+        {shownPage === "agent" && account && <AgentApply account={account} onBack={() => go("profile")} onToast={toast} onChanged={refresh} />}
         {shownPage === "visits" && <Visits onToast={toast} onOpenListing={setDetailId} onChanged={refreshTodo} />}
       </div>
 
