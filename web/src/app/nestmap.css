@@ -279,7 +279,8 @@
   .ph { position: relative; aspect-ratio: 1; border-radius: 14px; overflow: hidden; background: var(--bg2); } .ph img { width: 100%; height: 100%; object-fit: cover; }
   .ph button { position: absolute; top: 5px; right: 5px; width: 26px; height: 26px; border-radius: 50%; background: rgba(0,0,0,.6); color: #fff; display: grid; place-items: center; } .ph button svg { width: 14px; height: 14px; }
   .ph.add { display: grid; place-items: center; align-content: center; gap: 2px; border: 1.5px dashed var(--line); color: var(--accent); cursor: pointer; font-size: 13px; font-weight: 600; } .ph.add svg { width: 22px; height: 22px; }
-  .pacts { display: flex; gap: 10px; position: sticky; bottom: 0; padding: 12px 0; background: linear-gradient(to top, var(--bg) 70%, transparent); }
+  /* sticky bars sit on the bottom edge, so on phones they leave room for the floating nav below them */
+  .pacts { display: flex; gap: 10px; position: sticky; bottom: 0; padding: 12px 0 calc(env(safe-area-inset-bottom) + 92px); background: var(--bg); box-shadow: 0 -10px 14px -8px var(--bg); }
   .pacts .btn:disabled { opacity: .6; }
 
   /* ---- chat ---- */
@@ -294,6 +295,8 @@
   .msg { max-width: 80%; justify-self: start; background: var(--bg2); border-radius: 18px 18px 18px 6px; padding: 10px 14px; }
   .msg.me { justify-self: end; background: var(--accent); color: var(--accent-fg); border-radius: 18px 18px 6px 18px; }
   .msg p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; } .msg small { display: block; opacity: .65; font-size: 11px; margin-top: 3px; text-align: right; }
-  .compose { display: flex; gap: 10px; position: sticky; bottom: 0; padding: 10px 0; background: var(--bg); }
+  .compose { display: flex; gap: 10px; position: sticky; bottom: 0; padding: 10px 0 calc(env(safe-area-inset-bottom) + 92px); background: var(--bg); }
   .compose input { flex: 1; min-width: 0; padding: 13px 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg2); font: inherit; color: var(--fg); outline: none; } .compose input:focus { border-color: var(--accent); }
   .compose .btn { flex: none; padding: 12px 22px; }
+  @media (min-width: 900px) { .pacts, .compose { padding-bottom: 12px; } }
+  .view:has(.pacts), .view:has(.compose) { padding-bottom: 0; }   /* the bar carries its own space above the nav */
