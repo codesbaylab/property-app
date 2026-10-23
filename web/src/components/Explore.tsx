@@ -87,6 +87,13 @@ export default function Explore() {
   const pins = useMemo(() => visible.map(l => ({ id: l.id, lat: l.lat, lng: l.lng, label: fmt(priceFor(l, mode), mode) })), [visible, mode]);
   const inView = useMemo(() => (view ? visible.filter(l => inBounds(l, view)) : []), [visible, view]);
 
+  // Show every price when only a few homes are on screen. Switch on at 25 or fewer, off again above 35, so it never flickers at the edge.
+  const [plain, setPlain] = useState(false);
+  const crowded = inView.length > 35 || (view?.zoom ?? 0) < 11;
+  const sparse = inView.length <= 25 && (view?.zoom ?? 0) >= 11;
+  if (plain && crowded) setPlain(false);
+  else if (!plain && sparse) setPlain(true);
+
   const flyTo = useCallback((lat: number, lng: number, zoom?: number) => setFly({ lat, lng, zoom, key: ++flyKey.current }), []);
   const lookup = (id: string | null) => (id ? byId.get(id) ?? (isSampleId(id) ? generateListing(id) : null) : null);
 
@@ -104,7 +111,7 @@ export default function Explore() {
     closeSheets();   // keep the sub-type list open: the user is about to pick from it
   };
   const changeType = (t: PType | null) => {
-    setType(t); setMaxPrice(null);
+    setType(t);   // the price filter stays: Buy and Rent have different price scales, but types within one mode do not
     if (t && !RES.includes(t)) setBeds(0);   // bedrooms only make sense for homes
     closeSheets();
   };
@@ -113,6 +120,11 @@ export default function Explore() {
   const showBeds = !type || RES.includes(type);
   const [rMin, rMax, rStep] = RANGE[mode];
   const filtersOn = !!maxPrice || beds > 0;
+
+  // how many homes in view match the filter being set, shown on the button so the slider gives feedback as it moves
+  const preview = useMemo(() => (view ? all.filter(l => priceFor(l, mode) > 0 && (!type || l.type === type)
+    && (draftPrice >= rMax || priceFor(l, mode) <= draftPrice) && l.beds >= (showBeds ? draftBeds : 0) && inBounds(l, view)).length : 0),
+    [all, view, mode, type, draftPrice, draftBeds, rMax, showBeds]);
 
   const openFilter = () => { setDraftPrice(maxPrice ?? rMax); setDraftBeds(beds); setSheet("filter"); };
   const applyFilter = () => { setMaxPrice(draftPrice >= rMax ? null : draftPrice); setBeds(showBeds ? draftBeds : 0); closeAll(); };
@@ -143,7 +155,7 @@ export default function Explore() {
 
   return (
     <>
-      <MapView pins={pins} selectedId={selectedId} dark={dark} fly={fly} start={START}
+      <MapView pins={pins} selectedId={selectedId} dark={dark} fly={fly} start={START} plain={plain}
         onSelect={select} onMove={setView} onBackgroundClick={closeAll} />
 
       <div className="top">
@@ -216,7 +228,8 @@ export default function Explore() {
         <div className="sh"><h2>Filters</h2><button className="x" onClick={closeAll} aria-label="Close"><Icon name="x" /></button></div>
         <div className="field">
           <label>Max price <output>{draftPrice >= rMax ? "Any" : fmt(draftPrice, mode)}</output></label>
-          <input type="range" min={rMin} max={rMax} step={rStep} value={draftPrice} onChange={e => setDraftPrice(+e.target.value)} aria-label="Max price" />
+          <input type="range" min={rMin} max={rMax} step={rStep} value={draftPrice} onChange={e => setDraftPrice(+e.target.value)} aria-label="Max price"
+            style={{ "--p": `${((draftPrice - rMin) / (rMax - rMin)) * 100}%` } as React.CSSProperties} />
         </div>
         {showBeds && (
           <div className="field">
@@ -224,7 +237,7 @@ export default function Explore() {
             <div className="chips">{[0, 1, 2, 3].map(n => <button key={n} className={`chip${draftBeds === n ? " on" : ""}`} onClick={() => setDraftBeds(n)}>{n ? `${n}+` : "Any"}</button>)}</div>
           </div>
         )}
-        <div className="cta"><button className="btn ghost" onClick={resetFilter}>Reset</button><button className="btn primary" style={{ flex: 2 }} onClick={applyFilter}>Show results</button></div>
+        <div className="cta"><button className="btn ghost" onClick={resetFilter}>Reset</button><button className="btn primary" style={{ flex: 2 }} onClick={applyFilter}>Show {preview} {preview === 1 ? "home" : "homes"}</button></div>
       </div>
 
       {detail && (

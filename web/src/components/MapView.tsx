@@ -44,24 +44,27 @@ interface Props {
   dark: boolean;
   fly: FlyTo | null;
   start: [number, number];   // [lng, lat]
+  /** few homes on screen: show every price instead of grouping them into bubbles */
+  plain: boolean;
   onSelect: (id: string) => void;
   onMove: (v: View) => void;
   onBackgroundClick: () => void;
 }
 
-export default function MapView({ pins, selectedId, dark, fly, start, onSelect, onMove, onBackgroundClick }: Props) {
+export default function MapView({ pins, selectedId, dark, fly, start, plain, onSelect, onMove, onBackgroundClick }: Props) {
   const box = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MLMap | null>(null);
   const registry = useRef(new Map<string, Entry>());
   // latest values for the long-lived map callbacks
-  const live = useRef({ pins, selectedId, onSelect, onMove, onBackgroundClick });
-  useEffect(() => { live.current = { pins, selectedId, onSelect, onMove, onBackgroundClick }; });
+  const live = useRef({ pins, selectedId, plain, onSelect, onMove, onBackgroundClick });
+  useEffect(() => { live.current = { pins, selectedId, plain, onSelect, onMove, onBackgroundClick }; });
   const firstStyle = useRef(true);
 
   function refreshMarkers() {
     const map = mapRef.current;
     if (!map || !map.getSource("listings")) return;
-    const dot = map.getZoom() < 14;
+    // prices show when zoomed in close, or whenever there are few enough homes that they will not crowd each other
+    const dot = map.getZoom() < 14 && !live.current.plain;
     const seen = new Set<string>();
     for (const f of map.querySourceFeatures("listings")) {
       const p = f.properties as { cluster?: boolean; cluster_id?: number; point_count?: number; id?: string; label?: string };
@@ -114,7 +117,7 @@ export default function MapView({ pins, selectedId, dark, fly, start, onSelect, 
     mapRef.current = map;
     map.touchZoomRotate.disableRotation();
     map.on("style.load", () => {
-      map.addSource("listings", { type: "geojson", data: toCollection(live.current.pins), cluster: true, clusterRadius: 56, clusterMaxZoom: 13 });
+      map.addSource("listings", { type: "geojson", data: toCollection(live.current.pins), cluster: !live.current.plain, clusterRadius: 56, clusterMaxZoom: 13 });
       // invisible layer: keeps the source loaded so we can read its features for the HTML markers
       map.addLayer({ id: "listings-hit", type: "circle", source: "listings", paint: { "circle-radius": 1, "circle-opacity": 0 } });
     });
@@ -143,6 +146,12 @@ export default function MapView({ pins, selectedId, dark, fly, start, onSelect, 
     const src = mapRef.current?.getSource("listings") as GeoJSONSource | undefined;
     src?.setData(toCollection(pins));
   }, [pins]);
+
+  // few homes on screen: stop grouping so every price shows; many homes: group again
+  useEffect(() => {
+    const src = mapRef.current?.getSource("listings") as GeoJSONSource | undefined;
+    src?.setClusterOptions({ cluster: !plain });
+  }, [plain]);
 
   // selection highlight
   useEffect(() => { refreshMarkers(); }, [selectedId]);
