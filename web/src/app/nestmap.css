@@ -283,6 +283,12 @@
   .pacts { display: flex; gap: 10px; position: sticky; bottom: 0; padding: 12px 0 calc(env(safe-area-inset-bottom) + 92px); background: var(--bg); box-shadow: 0 -10px 14px -8px var(--bg); }
   .pacts .btn:disabled { opacity: .6; }
 
+  /* ---- terms and privacy ---- */
+  .legal { position: fixed; inset: 0; overflow-y: auto; background: var(--bg); padding: calc(env(safe-area-inset-top) + 22px) 18px 60px; }
+  .legal .vw { max-width: 720px; } .legal .lead { font-size: 16px; margin: 0 0 8px; }
+  .legal h2 { font-size: 18px; letter-spacing: -.02em; margin: 26px 0 8px; } .legal p, .legal li { color: var(--muted); line-height: 1.6; margin: 0 0 10px; }
+  .legal ul { padding-left: 20px; margin: 0 0 10px; } .legal li b { color: var(--fg); } .legal a { color: var(--accent); }
+
   /* ---- chat ---- */
   .li.conv img, .tl img { width: 52px; height: 52px; border-radius: 14px; object-fit: cover; flex: none; }
   .li.conv .cmeta { display: grid; justify-items: end; gap: 6px; color: var(--muted); font-size: 12px; flex: none; }

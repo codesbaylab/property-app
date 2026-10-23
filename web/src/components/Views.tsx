@@ -162,6 +162,7 @@ export function ProfileView({ pref, onPref, onToast, account, canSignIn, signIn,
               {error && <div className="err" role="alert">{error}</div>}
               <button className="btn primary" disabled={busy}>{busy ? (mode === "in" ? "Signing in…" : "Creating account…") : mode === "in" ? "Sign in" : "Create account"}</button>
               <div className="meta" style={{ fontSize: 12.5 }}>{mode === "in" ? "New here? Choose Create account above." : "You'll be able to save homes right away."} Phone-number login is coming soon.</div>
+              {mode === "up" && <div className="meta" style={{ fontSize: 12.5 }}>By creating an account you agree to our <a href="/terms" target="_blank" rel="noreferrer">Terms of use</a> and <a href="/privacy" target="_blank" rel="noreferrer">Privacy policy</a>.</div>}
             </div>
           </form>
         )
