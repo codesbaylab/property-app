@@ -6,9 +6,10 @@ import ModeControl from "./ModeControl";
 import ListingDetail, { Heart, Toast } from "./ListingDetail";
 import { InboxView, PostView, ProfileView, SavedView, type Page } from "./Views";
 import type { FlyTo, View } from "./MapView";
+import { useAuth } from "@/lib/auth";
 import { useSaved, useTheme, useToast } from "@/lib/hooks";
 import { PT, RANGE, RES, fmt, inBounds, modeFor, priceFor, spec, type Listing, type Mode, type PType } from "@/lib/listing";
-import { getListing, isSampleId, loadListings } from "@/lib/data";
+import { getListing, isSampleId, loadListings, usingDatabase } from "@/lib/data";
 import { generateListing } from "@/lib/sample";
 
 const MapView = dynamic(() => import("./MapView"), { ssr: false });
@@ -17,7 +18,8 @@ type Sheet = null | "card" | "list" | "filter";
 const START: [number, number] = [75.7804, 11.2588]; // Kozhikode, until the browser tells us where the user is
 
 export default function Explore() {
-  const { saved, toggle } = useSaved();
+  const { account, signIn, signOut } = useAuth();
+  const { saved, toggle } = useSaved(account?.id ?? null);
   const { pref, setPref, dark } = useTheme();
   const { toast, toastMsg, toastOn } = useToast();
 
@@ -171,7 +173,7 @@ export default function Explore() {
         {page === "saved" && <SavedView items={savedItems} mode={mode} savedIds={saved} onToggle={toggle} onOpen={setDetailId} />}
         {page === "inbox" && <InboxView onToast={toast} />}
         {page === "post" && <PostView onToast={toast} />}
-        {page === "profile" && <ProfileView pref={pref} onPref={setPref} onToast={toast} />}
+        {page === "profile" && <ProfileView pref={pref} onPref={setPref} onToast={toast} account={account} canSignIn={usingDatabase} signIn={signIn} signOut={signOut} />}
       </div>
 
       <div className={`scrim${sheet && sheet !== "card" ? " on" : ""}`} onClick={closeAll} />

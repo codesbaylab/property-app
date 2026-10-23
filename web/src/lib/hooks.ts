@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { supabase, supabaseConfigured } from "./supabase";
 
 /* ---------- tiny localStorage store (falls back to memory if storage is blocked) ---------- */
 const memory: Record<string, string> = {};
@@ -18,17 +19,61 @@ const write = (key: string, value: string) => {
 };
 const useStored = (key: string) => useSyncExternalStore(subscribe, () => read(key), () => null);
 
-/** Saved homes, kept in this browser for now. Moves to the database once accounts exist. */
-export function useSaved() {
+const isUuid = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+/**
+ * Saved homes. Signed out: kept in this browser. Signed in: stored on the account (saved_listings table),
+ * and anything saved in this browser before signing in is added to the account.
+ */
+export function useSaved(userId: string | null) {
   const raw = useStored("saved");
-  const saved = useMemo(() => {
+  const local = useMemo(() => {
     try { return new Set<string>(raw ? JSON.parse(raw) : []); } catch { return new Set<string>(); }
   }, [raw]);
+  const [remote, setRemote] = useState<{ user: string; ids: Set<string> } | null>(null);
+
+  useEffect(() => {
+    if (!userId || !supabaseConfigured) return;
+    let alive = true;
+    (async () => {
+      const db = supabase();
+      const { data } = await db.from("saved_listings").select("listing_id");
+      const ids = new Set<string>((data ?? []).map(r => r.listing_id as string));
+      const extra = [...local].filter(id => isUuid(id) && !ids.has(id));
+      if (extra.length) {
+        await db.from("saved_listings").upsert(extra.map(listing_id => ({ user_id: userId, listing_id })), { onConflict: "user_id,listing_id", ignoreDuplicates: true });
+        extra.forEach(id => ids.add(id));
+      }
+      if (alive) setRemote({ user: userId, ids });
+    })();
+    return () => { alive = false; };
+    // only when the signed-in account changes; later saves update the list directly
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
+  const onAccount = !!userId && remote?.user === userId;
+  const saved = onAccount ? remote!.ids : local;
+
   const toggle = useCallback((id: string) => {
-    const next = new Set(saved);
+    if (userId && supabaseConfigured && isUuid(id)) {
+      const had = onAccount && remote!.ids.has(id);
+      const flip = (add: boolean) => setRemote(prev => {
+        const ids = new Set(prev?.user === userId ? prev.ids : []);
+        if (add) ids.add(id); else ids.delete(id);
+        return { user: userId, ids };
+      });
+      flip(!had);   // show the change straight away
+      const db = supabase();
+      // a Supabase request only runs once something waits for it, hence the .then()
+      (had ? db.from("saved_listings").delete().eq("listing_id", id) : db.from("saved_listings").insert({ user_id: userId, listing_id: id }))
+        .then(({ error }) => { if (error) { console.error("Could not save:", error.message); flip(had); } });   // put it back if the save failed
+      return;
+    }
+    const next = new Set(local);
     if (next.has(id)) next.delete(id); else next.add(id);
     write("saved", JSON.stringify([...next]));
-  }, [saved]);
+  }, [userId, onAccount, remote, local]);
+
   return { saved, toggle };
 }
 

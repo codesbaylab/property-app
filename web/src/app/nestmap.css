@@ -211,3 +211,6 @@
 
   .skel { background: linear-gradient(90deg, var(--bg2), color-mix(in srgb, var(--bg2) 60%, var(--bg)), var(--bg2)); background-size: 200% 100%; border-radius: 12px; animation: shimmer 1.2s linear infinite; }
   @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+  .login .stack { display: grid; gap: 10px; margin-top: 14px; } .login .stack .btn { width: 100%; } .login .stack .btn:disabled { opacity: .6; }
+  .login .err { color: var(--danger); font-size: 13.5px; font-weight: 500; }

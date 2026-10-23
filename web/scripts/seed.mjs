@@ -1,19 +1,17 @@
 // Fills the database with sample listings so the map is not empty while you build.
 //   npm run seed [count]      default 360, around Kozhikode (uses scripts/data/buildings.json)
 // Safe to run again: it replaces earlier seed listings (source = 'seed') and leaves everything else alone.
-// Needs NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY in web/.env.local. The secret key never goes in the browser or in chat.
+// Uses DATABASE_URL (and SUPABASE_DB_PASSWORD) from web/.env.local, so no separate secret key is needed.
 import { existsSync, readFileSync } from "node:fs";
-import { createClient } from "@supabase/supabase-js";
+import pg from "pg";
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const secret = process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!url || !secret) { console.error("Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY in web/.env.local (see docs/database-setup.md)."); process.exit(1); }
+const url = process.env.DATABASE_URL?.replace("[YOUR-PASSWORD]", process.env.SUPABASE_DB_PASSWORD ?? "");
+if (!url || url.includes("[YOUR-PASSWORD]")) { console.error("DATABASE_URL is not set in web/.env.local (see docs/database-setup.md)."); process.exit(1); }
 const dataFile = new URL("./data/buildings.json", import.meta.url);
 if (!existsSync(dataFile)) { console.error("Run `npm run seed:buildings` first, so listings can be placed on real buildings."); process.exit(1); }
 
 const COUNT = Number(process.argv[2] ?? 360);
 const buildings = JSON.parse(readFileSync(dataFile, "utf8"));
-const db = createClient(url, secret, { auth: { persistSession: false, autoRefreshToken: false } });
 
 // small repeatable random generator, so the same seed gives the same listings
 let state = 20261022;
@@ -30,59 +28,81 @@ const AMEN_BY = { plot: ["Clear title", "Road access", "Water connection", "Near
 const DIRS = ["East", "West", "North", "South"];
 const FURN = ["Unfurnished", "Semi-furnished", "Fully furnished"];
 
-// --- people: four verified agents who post the sample listings
-const owners = [];
-const { data: existing } = await db.auth.admin.listUsers({ perPage: 1000 });
-for (const name of AGENTS) {
-  const email = `${name.toLowerCase().replace(/[^a-z]+/g, ".")}@seed.nestmap.invalid`;
-  let user = existing?.users.find(u => u.email === email);
-  if (!user) {
-    const { data, error } = await db.auth.admin.createUser({ email, email_confirm: true, user_metadata: { name } });
-    if (error) { console.error("Could not create a sample agent:", error.message); process.exit(1); }
-    user = data.user;
+const db = new pg.Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
+await db.connect();
+try {
+  await db.query("begin");
+
+  // --- people: four verified agents who post the sample listings
+  const owners = [];
+  for (const name of AGENTS) {
+    const email = `${name.toLowerCase().replace(/[^a-z]+/g, ".")}@seed.nestmap.invalid`;
+    let id = (await db.query("select id from auth.users where email = $1", [email])).rows[0]?.id;
+    if (!id) {
+      // empty strings (not NULL) in the token columns keep Supabase Auth happy if this user is ever listed or edited
+      id = (await db.query(
+        `insert into auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data,
+                                 created_at, updated_at, confirmation_token, email_change, email_change_token_new, recovery_token)
+         values ('00000000-0000-0000-0000-000000000000', gen_random_uuid(), 'authenticated', 'authenticated', $1, '', now(),
+                 '{"provider":"email","providers":["email"]}', jsonb_build_object('name', $2::text), now(), now(), '', '', '', '')
+         returning id`, [email, name])).rows[0].id;
+    }
+    await db.query(
+      `insert into public.profiles (id, name, city, agent_status) values ($1, $2, 'Kozhikode', 'verified')
+       on conflict (id) do update set name = excluded.name, city = excluded.city, agent_status = 'verified'`, [id, name]);
+    owners.push(id);
   }
-  const { error } = await db.from("profiles").upsert({ id: user.id, name, city: "Kozhikode", agent_status: "verified" });
-  if (error) { console.error("Could not update a profile:", error.message); process.exit(1); }
-  owners.push(user.id);
-}
 
-// --- listings
-const spots = [...buildings].sort(() => rnd() - 0.5);
-const rows = [];
-for (let i = 0; i < COUNT; i++) {
-  const spot = spots[i % spots.length];
-  const type = pick(["apartment", "apartment", "apartment", "house", "house", "villa", "plot", "commercial", "pg_hostel"]);
-  const mode = type === "plot" ? "buy" : type === "pg_hostel" ? "rent" : rnd() < 0.55 ? "buy" : "rent";
-  let beds = between(1, 4), baths = Math.max(1, beds - between(0, 1)), area = 450 + beds * 350 + between(0, 300), price, floor = null, facing = null;
-  if (type === "plot") { beds = baths = 0; area = between(1500, 6000); price = Math.min(2e7, Math.max(2e6, roundTo(area * between(900, 2400), 1e5))); facing = pick(DIRS); }
-  else if (type === "commercial") { beds = 0; baths = 1; area = between(400, 3000); floor = between(0, 2); price = mode === "buy" ? Math.min(2e7, roundTo(area * between(4000, 9000), 1e5)) : Math.min(1e5, roundTo(area * between(40, 100), 1000)); }
-  else if (type === "pg_hostel") { beds = 1; baths = 1; area = between(120, 300); price = roundTo(between(5000, 13000), 500); }
-  else { price = mode === "buy" ? roundTo((35 + beds * 28 + rnd() * 60) * 1e5, 1e5) : roundTo((8 + beds * 7 + rnd() * 12) * 1000, 500); floor = type === "apartment" ? between(0, 12) : null; }
-  const area_name = pick(AREAS);
-  rows.push({
-    owner_id: pick(owners), posted_as: "agent", mode, type, price, beds, baths, area_sqft: area, floor, facing,
-    furnishing: ["apartment", "house", "villa"].includes(type) ? pick(FURN) : null,
-    address: `${between(10, 99)}, ${pick(STREETS)}`, locality: area_name, city: "Kozhikode",
-    location: `SRID=4326;POINT(${spot[1]} ${spot[0]})`,
-    amenities: AMEN_BY[type] ?? Array.from(new Set(Array.from({ length: 5 }, () => pick(AMEN)))),
-    description: type === "plot" ? `A well-shaped ${area} sq ft plot in ${area_name} with clear title and road access, ready for construction.`
-      : type === "commercial" ? `A ${area} sq ft commercial space in ${area_name} on a busy road with good footfall and parking nearby.`
-      : type === "pg_hostel" ? `A clean, safe room in ${area_name} close to colleges and offices, with Wi-Fi, laundry and 24h security.`
-      : `A bright ${beds}-bedroom ${type} in ${area_name}. Open living space, good ventilation and easy access to shops, schools and public transport.`,
-    status: "live", is_verified: true, source: "seed", expires_at: new Date(Date.now() + 30 * 864e5).toISOString(),
-  });
-}
+  // --- listings
+  const spots = [...buildings].sort(() => rnd() - 0.5);
+  const rows = [];
+  for (let i = 0; i < COUNT; i++) {
+    const spot = spots[i % spots.length];
+    const type = pick(["apartment", "apartment", "apartment", "house", "house", "villa", "plot", "commercial", "pg_hostel"]);
+    const mode = type === "plot" ? "buy" : type === "pg_hostel" ? "rent" : rnd() < 0.55 ? "buy" : "rent";
+    let beds = between(1, 4), baths = Math.max(1, beds - between(0, 1)), area = 450 + beds * 350 + between(0, 300), price, floor = null, facing = null;
+    if (type === "plot") { beds = baths = 0; area = between(1500, 6000); price = Math.min(2e7, Math.max(2e6, roundTo(area * between(900, 2400), 1e5))); facing = pick(DIRS); }
+    else if (type === "commercial") { beds = 0; baths = 1; area = between(400, 3000); floor = between(0, 2); price = mode === "buy" ? Math.min(2e7, roundTo(area * between(4000, 9000), 1e5)) : Math.min(1e5, roundTo(area * between(40, 100), 1000)); }
+    else if (type === "pg_hostel") { beds = 1; baths = 1; area = between(120, 300); price = roundTo(between(5000, 13000), 500); }
+    else { price = mode === "buy" ? roundTo((35 + beds * 28 + rnd() * 60) * 1e5, 1e5) : roundTo((8 + beds * 7 + rnd() * 12) * 1000, 500); floor = type === "apartment" ? between(0, 12) : null; }
+    const place = pick(AREAS);
+    rows.push({
+      owner_id: pick(owners), mode, type, price, beds, baths, area_sqft: area, floor, facing,
+      furnishing: ["apartment", "house", "villa"].includes(type) ? pick(FURN) : null,
+      address: `${between(10, 99)}, ${pick(STREETS)}`, locality: place, lat: spot[0], lng: spot[1],
+      amenities: AMEN_BY[type] ?? Array.from(new Set(Array.from({ length: 5 }, () => pick(AMEN)))),
+      description: type === "plot" ? `A well-shaped ${area} sq ft plot in ${place} with clear title and road access, ready for construction.`
+        : type === "commercial" ? `A ${area} sq ft commercial space in ${place} on a busy road with good footfall and parking nearby.`
+        : type === "pg_hostel" ? `A clean, safe room in ${place} close to colleges and offices, with Wi-Fi, laundry and 24h security.`
+        : `A bright ${beds}-bedroom ${type} in ${place}. Open living space, good ventilation and easy access to shops, schools and public transport.`,
+    });
+  }
 
-const { error: delErr } = await db.from("listings").delete().eq("source", "seed");
-if (delErr) { console.error("Could not clear earlier seed listings:", delErr.message); process.exit(1); }
+  await db.query("delete from public.listings where source = 'seed'");   // photos go with them (cascade)
 
-let inserted = 0;
-for (let i = 0; i < rows.length; i += 100) {
-  const { data, error } = await db.from("listings").insert(rows.slice(i, i + 100)).select("id");
-  if (error) { console.error("Insert failed:", error.message); process.exit(1); }
-  const photos = data.flatMap(l => [0, 1, 2, 3].map(k => ({ listing_id: l.id, path: `https://picsum.photos/seed/${l.id}-${k}/900/650`, sort_order: k })));
-  const { error: pErr } = await db.from("listing_photos").insert(photos);
-  if (pErr) { console.error("Photo insert failed:", pErr.message); process.exit(1); }
-  inserted += data.length;
+  let inserted = 0;
+  for (let i = 0; i < rows.length; i += 100) {
+    const { rows: made } = await db.query(
+      `insert into public.listings (owner_id, posted_as, mode, type, price, beds, baths, area_sqft, floor, facing, furnishing, address, locality, city,
+                                    location, amenities, description, status, is_verified, source, expires_at)
+       select t.owner_id, 'agent', t.mode::public.listing_mode, t.type::public.property_type, t.price, t.beds, t.baths, t.area_sqft, t.floor, t.facing, t.furnishing,
+              t.address, t.locality, 'Kozhikode', extensions.st_setsrid(extensions.st_makepoint(t.lng, t.lat), 4326)::extensions.geography,
+              array(select jsonb_array_elements_text(t.amenities)), t.description, 'live', true, 'seed', now() + interval '30 days'
+       from jsonb_to_recordset($1::jsonb) as t(owner_id uuid, mode text, type text, price numeric, beds int, baths int, area_sqft int, floor int, facing text,
+                                              furnishing text, address text, locality text, lat float8, lng float8, amenities jsonb, description text)
+       returning id`, [JSON.stringify(rows.slice(i, i + 100))]);
+    await db.query(
+      `insert into public.listing_photos (listing_id, path, sort_order)
+       select l, 'https://picsum.photos/seed/' || l || '-' || k || '/900/650', k from unnest($1::uuid[]) as l, generate_series(0, 3) as k`,
+      [made.map(r => r.id)]);
+    inserted += made.length;
+  }
+  await db.query("commit");
+  console.log(`Done: ${inserted} sample listings (${AGENTS.length} agents) around Kozhikode.`);
+} catch (err) {
+  await db.query("rollback");
+  console.error("Seed failed, nothing was changed:", err.message);
+  process.exitCode = 1;
+} finally {
+  await db.end();
 }
-console.log(`Done: ${inserted} sample listings (${AGENTS.length} agents) around Kozhikode.`);

@@ -19,3 +19,6 @@ Thumbs.db
 .vscode/
 .idea/
 *.log
+
+# demo account passwords (never commit)
+web/.demo-accounts.txt

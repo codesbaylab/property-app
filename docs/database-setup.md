@@ -13,12 +13,13 @@ The app already knows how to read from Supabase. Until you add your keys it uses
 |---|---|
 | Project Settings > API > **Project URL** | `NEXT_PUBLIC_SUPABASE_URL` |
 | Project Settings > API > **Publishable key** (`sb_publishable_...`) | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` |
-| Project Settings > API > **Secret key** (`sb_secret_...`) | `SUPABASE_SECRET_KEY` |
+| *Optional for now:* Project Settings > API > **Secret key** (`sb_secret_...`) | `SUPABASE_SECRET_KEY` (only needed later for server-side features; setup and the sample data do not use it) |
+| The database password you chose | `SUPABASE_DB_PASSWORD` |
 | **Connect** button > **Session pooler** > URI (replace `[YOUR-PASSWORD]` with your password) | `DATABASE_URL` |
 
 Copy `web/.env.example` to `web/.env.local` and paste the values in. Use the **Session pooler** string, not "Direct connection": the direct one needs IPv6, which many home networks don't have.
 
-The secret key and database URL stay on your computer in `.env.local`. Don't paste them into chat or commit them.
+The database password, connection string and secret key stay on your computer in `.env.local`. Don't paste them into chat or commit them.
 
 ## 3. Run three commands (in the `web` folder)
 
@@ -26,6 +27,7 @@ The secret key and database URL stay on your computer in `.env.local`. Don't pas
 npm run db:migrate        # creates the tables, security rules and map search function
 npm run seed:buildings    # downloads real building spots around Kozhikode (once; skip if scripts/data/buildings.json exists)
 npm run seed              # adds about 360 sample listings and 4 sample agents
+npm run db:check          # health check: tables, security rules, functions
 ```
 
 Then `npm run dev`. The map now reads from your database.

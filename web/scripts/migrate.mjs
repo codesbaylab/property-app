@@ -5,9 +5,10 @@
 import { readdirSync, readFileSync } from "node:fs";
 import pg from "pg";
 
-const url = process.env.DATABASE_URL;
-if (!url) {
-  console.error("DATABASE_URL is missing. Add it to web/.env.local (see docs/database-setup.md).");
+// the dashboard shows the connection string with [YOUR-PASSWORD] in it; fill it in from SUPABASE_DB_PASSWORD
+const url = process.env.DATABASE_URL?.replace("[YOUR-PASSWORD]", process.env.SUPABASE_DB_PASSWORD ?? "");
+if (!url || url.includes("[YOUR-PASSWORD]")) {
+  console.error("DATABASE_URL (and SUPABASE_DB_PASSWORD if the URL contains [YOUR-PASSWORD]) must be set in web/.env.local. See docs/database-setup.md.");
   process.exit(1);
 }
 

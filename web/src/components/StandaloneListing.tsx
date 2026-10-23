@@ -1,13 +1,15 @@
 "use client";
 import { useRouter } from "next/navigation";
 import ListingDetail, { Toast } from "./ListingDetail";
+import { useAuth } from "@/lib/auth";
 import { useSaved, useTheme, useToast } from "@/lib/hooks";
 import type { Listing } from "@/lib/listing";
 
 /** The shareable /home/<id> page: same screen as the map overlay, opened straight from a link. */
 export default function StandaloneListing({ listing }: { listing: Listing }) {
   const router = useRouter();
-  const { saved, toggle } = useSaved();
+  const { account } = useAuth();
+  const { saved, toggle } = useSaved(account?.id ?? null);
   const { toast, toastMsg, toastOn } = useToast();
   useTheme();
   return (

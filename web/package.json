@@ -13,7 +13,9 @@
     "prebuild": "node scripts/copy-maplibre-worker.mjs",
     "db:migrate": "node --env-file-if-exists=.env.local scripts/migrate.mjs",
     "seed": "node --env-file-if-exists=.env.local scripts/seed.mjs",
-    "seed:buildings": "node scripts/fetch-buildings.mjs"
+    "seed:buildings": "node scripts/fetch-buildings.mjs",
+    "db:check": "node --env-file-if-exists=.env.local scripts/db-check.mjs",
+    "seed:users": "node --env-file-if-exists=.env.local scripts/seed-users.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",
