@@ -12,9 +12,11 @@ import { PT, RANGE, RES, fmt, inBounds, modeFor, priceFor, spec, type Listing, t
 import { getListing, isSampleId, loadListings, reportListing, usingDatabase } from "@/lib/data";
 import { generateListing } from "@/lib/sample";
 import { startConversation, useUnread } from "@/lib/chat";
+import { requestVisit, useVisitTodo } from "@/lib/visits";
 
 const MapView = dynamic(() => import("./MapView"), { ssr: false });
 const Chat = dynamic(() => import("./Chat"), { ssr: false });
+const Visits = dynamic(() => import("./Visits"), { ssr: false });
 const PostFlow = dynamic(() => import("./PostFlow"), { ssr: false });
 
 type Sheet = null | "card" | "list" | "filter";
@@ -24,6 +26,7 @@ export default function Explore() {
   const { account, ready, signIn, signUp, signOut } = useAuth();
   const { saved, toggle } = useSaved(account?.id ?? null);
   const { unread, refreshUnread } = useUnread(usingDatabase ? account?.id ?? null : null);
+  const { todo, refreshTodo } = useVisitTodo(usingDatabase ? account?.id ?? null : null);
   const [chatId, setChatId] = useState<string | null>(null);
   const { pref, setPref, dark } = useTheme();
   const { toast, toastMsg, toastOn } = useToast();
@@ -123,7 +126,7 @@ export default function Explore() {
 
   // With a database connected, saving, messaging and posting need an account. Guests only see Explore and Sign in.
   const gated = usingDatabase && !account;
-  const shownPage: Page = gated && (page === "saved" || page === "inbox" || page === "post") ? "explore" : page;
+  const shownPage: Page = gated && (page === "saved" || page === "inbox" || page === "post" || page === "visits") ? "explore" : page;
   const go = (p: Page) => { setPage(p); setChatId(null); setDetailId(null); closeAll(); };
   const needLogin = (msg: string) => { toast(msg); go("profile"); };
   const startChat = async (listingId: string) => {
@@ -209,8 +212,9 @@ export default function Explore() {
       <div className={`view${shownPage !== "explore" ? " open" : ""}`}>
         {shownPage === "saved" && <SavedView items={savedItems} mode={mode} savedIds={saved} onToggle={toggleSave} onOpen={setDetailId} />}
         {shownPage === "inbox" && (account && usingDatabase ? <Chat account={account} openId={chatId} onOpen={setChatId} onToast={toast} onOpenListing={setDetailId} onRead={refreshUnread} /> : <InboxView />)}
-        {shownPage === "post" && (account ? <PostFlow account={account} dark={dark} onToast={toast} onOpen={setDetailId} /> : <PostView />)}
-        {shownPage === "profile" && <ProfileView pref={pref} onPref={setPref} onToast={toast} account={account} canSignIn={usingDatabase} signIn={signIn} signUp={signUp} signOut={signOut} />}
+        {shownPage === "post" && (account ? <PostFlow account={account} dark={dark} onToast={toast} onOpen={setDetailId} onOpenVisits={usingDatabase ? () => go("visits") : undefined} visitTodo={todo} /> : <PostView />)}
+        {shownPage === "profile" && <ProfileView pref={pref} onPref={setPref} onToast={toast} account={account} canSignIn={usingDatabase} signIn={signIn} signUp={signUp} signOut={signOut} onOpenVisits={usingDatabase ? () => go("visits") : undefined} todo={todo} />}
+        {shownPage === "visits" && <Visits onToast={toast} onOpenListing={setDetailId} onChanged={refreshTodo} />}
       </div>
 
       <div className={`scrim${sheet && sheet !== "card" ? " on" : ""}`} onClick={closeAll} />
@@ -270,6 +274,7 @@ export default function Explore() {
           loading={!isSampleId(detail.id) && !detail.full}
           report={usingDatabase && !isSampleId(detail.id) ? { signedIn: !!account, send: (reason, details) => (account ? reportListing(account.id, detail.id, reason, details) : Promise.resolve("Sign in first.")) } : undefined}
           onMessage={usingDatabase && !isSampleId(detail.id) ? () => startChat(detail.id) : undefined}
+          onVisit={usingDatabase && !isSampleId(detail.id) ? async (at, note) => { const p = await requestVisit(detail.id, at, note); if (!p) refreshTodo(); return p; } : undefined}
           signInRequired={gated} onNeedLogin={() => needLogin("Sign in to message, call or save")}
           onToggleSave={toggleSave} onClose={() => setDetailId(null)} onToast={toast} />
       )}

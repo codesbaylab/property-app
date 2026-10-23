@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import ListingDetail, { Toast } from "./ListingDetail";
 import { useAuth } from "@/lib/auth";
 import { startConversation } from "@/lib/chat";
+import { requestVisit } from "@/lib/visits";
 import { isSampleId, reportListing, usingDatabase } from "@/lib/data";
 import { useSaved, useTheme, useToast } from "@/lib/hooks";
 import type { Listing } from "@/lib/listing";
@@ -19,6 +20,7 @@ export default function StandaloneListing({ listing }: { listing: Listing }) {
       <ListingDetail listing={listing} mode={listing.buy > 0 ? "buy" : "rent"} immediate
         report={usingDatabase && !isSampleId(listing.id) ? { signedIn: !!account, send: (reason, details) => (account ? reportListing(account.id, listing.id, reason, details) : Promise.resolve("Sign in first.")) } : undefined}
         onMessage={usingDatabase && !isSampleId(listing.id) ? async () => { const r = await startConversation(listing.id); if ("error" in r) toast(r.error); else router.push(`/#chat=${r.id}`); } : undefined}
+        onVisit={usingDatabase && !isSampleId(listing.id) ? (at, note) => requestVisit(listing.id, at, note) : undefined}
         signInRequired={usingDatabase && !account} onNeedLogin={() => router.push("/#profile")}
         saved={saved.has(listing.id)} onToggleSave={id => { if (usingDatabase && !account) { if (ready) router.push("/#profile"); return; } toggle(id); }} onClose={() => router.push("/")} onToast={toast} />
       <Toast msg={toastMsg} on={toastOn} />

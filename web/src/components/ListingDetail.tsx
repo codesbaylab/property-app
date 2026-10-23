@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Icon } from "./Icon";
+import { VisitSheet } from "./Visits";
 import { REPORT_REASONS } from "@/lib/data";
 import { aboutOf, agentOf, amenitiesOf, factsOf, fmt, modeFor, priceFor, type Listing, type Mode } from "@/lib/listing";
 
@@ -35,13 +36,16 @@ interface Props {
   onNeedLogin?: () => void;
   /** opens a chat with whoever posted the listing; omitted while chat isn't available (sample data) */
   onMessage?: () => void;
+  /** asks the lister for a visit at a time; omitted while visits aren't available (sample data). Returns an error message or null */
+  onVisit?: (at: Date, note: string) => Promise<string | null>;
 }
 
 /** Full property screen. Used as an overlay on the map and as the shareable /home/<id> page. */
-export default function ListingDetail({ listing: l, mode, saved, onToggleSave, onClose, onToast, immediate, loading, report, signInRequired, onNeedLogin, onMessage }: Props) {
+export default function ListingDetail({ listing: l, mode, saved, onToggleSave, onClose, onToast, immediate, loading, report, signInRequired, onNeedLogin, onMessage, onVisit }: Props) {
   const [shown, setShown] = useState(!!immediate);
   const [slide, setSlide] = useState(1);
   const [reporting, setReporting] = useState(false);
+  const [visiting, setVisiting] = useState(false);
   useEffect(() => {
     if (immediate) return;
     const f = requestAnimationFrame(() => setShown(true));
@@ -98,10 +102,13 @@ export default function ListingDetail({ listing: l, mode, saved, onToggleSave, o
                 {(l.agent?.verified ?? true) && <span className="tag ok" style={{ margin: 0 }}><Icon name="verified" /></span>}
               </div>
             </>)}
+            {onVisit && !signInRequired && <button className="btn ghost visitbtn" onClick={() => setVisiting(true)}><Icon name="clock" />Request a visit</button>}
             {report?.signedIn && <button className="reportlink" onClick={() => setReporting(true)}>Report this listing</button>}
           </div>
         </div>
       </div>
+      {visiting && onVisit && <VisitSheet title="Request a visit" intro="Pick a day and time. The owner can accept, or suggest another time." confirm="Send request" withNote onClose={() => setVisiting(false)}
+        onSubmit={async (at, note) => { const problem = await onVisit(at, note); if (!problem) onToast("Request sent. Find it under Profile › Visits."); return problem; }} />}
       {reporting && report && <ReportSheet onClose={() => setReporting(false)} send={report.send} onToast={onToast} />}
       <div className="dbar glass">
         <div className="in">

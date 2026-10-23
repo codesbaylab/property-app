@@ -31,9 +31,11 @@ interface Props {
   onOpen: (id: string) => void;
   /** called after anything that changes how many listings the account has */
   onChanged?: () => void;
+  /** shortcut to the visits screen, with how many requests wait for an answer */
+  onOpenVisits?: () => void; visitTodo?: number;
 }
 
-export default function PostFlow({ account, dark, onToast, onOpen, onChanged }: Props) {
+export default function PostFlow({ account, dark, onToast, onOpen, onChanged, onOpenVisits, visitTodo = 0 }: Props) {
   const [mine, setMine] = useState<MyListing[] | null>(null);
   const [editing, setEditing] = useState<MyListing | "new" | null>(null);
   const [loadError, setLoadError] = useState("");
@@ -73,6 +75,7 @@ export default function PostFlow({ account, dark, onToast, onOpen, onChanged }: 
         <p>Free for up to 3 listings. Our team reviews every listing before it goes live.</p>
         <button className="btn" onClick={() => setEditing("new")}>Post a property</button>
       </div>
+      {onOpenVisits && <button className="li visitlink" onClick={onOpenVisits}><div className="ic"><Icon name="clock" /></div><div className="tx"><b>Visit requests</b><small>People who want to see your homes</small></div>{visitTodo > 0 && <i className="bdg inline">{visitTodo}</i>}<Icon name="chevron" /></button>}
       {loadError && <div className="err" role="alert" style={{ marginBottom: 12 }}>{loadError}</div>}
       {mine === null ? (
         <div className="meta">Loading…</div>

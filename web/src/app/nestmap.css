@@ -283,6 +283,15 @@
   .pacts { display: flex; gap: 10px; position: sticky; bottom: 0; padding: 12px 0 calc(env(safe-area-inset-bottom) + 92px); background: var(--bg); box-shadow: 0 -10px 14px -8px var(--bg); }
   .pacts .btn:disabled { opacity: .6; }
 
+  /* ---- visits ---- */
+  .visitbtn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: 22px; } .visitbtn svg { width: 18px; height: 18px; }
+  .visitlink { width: 100%; margin-bottom: 14px; border: 1px solid var(--line); border-radius: 18px; text-align: left; } .visitlink > svg:last-child { width: 17px; height: 17px; color: var(--muted); }
+  .vh { font-size: 15px; margin: 22px 0 10px; color: var(--muted); } .vh:first-of-type { margin-top: 4px; }
+  .vdays { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 10px; scrollbar-width: none; }
+  .vday { flex: none; width: 56px; padding: 8px 0; border-radius: 14px; border: 1px solid var(--line); display: grid; gap: 2px; justify-items: center; font-size: 12px; color: var(--muted); } .vday b { font-size: 17px; color: var(--fg); }
+  .vday.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); } .vday.on span, .vday.on b { color: var(--accent); }
+  .vslots { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; } .vslots .chip:disabled { opacity: .35; }
+
   /* ---- terms and privacy ---- */
   .legal { position: fixed; inset: 0; overflow-y: auto; background: var(--bg); padding: calc(env(safe-area-inset-top) + 22px) 18px 60px; }
   .legal .vw { max-width: 720px; } .legal .lead { font-size: 16px; margin: 0 0 8px; }
