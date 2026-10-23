@@ -2,7 +2,8 @@
 import { useEffect, useState } from "react";
 import { Icon } from "./Icon";
 import { VisitSheet } from "./Visits";
-import { REPORT_REASONS } from "@/lib/data";
+import { isSampleId, REPORT_REASONS, usingDatabase } from "@/lib/data";
+import { recordView } from "@/lib/stats";
 import { aboutOf, agentOf, amenitiesOf, factsOf, fmt, modeFor, priceFor, type Listing, type Mode } from "@/lib/listing";
 
 export function Heart({ on, id, cls, onToggle }: { on: boolean; id: string; cls: string; onToggle: (id: string) => void }) {
@@ -46,6 +47,7 @@ export default function ListingDetail({ listing: l, mode, saved, onToggleSave, o
   const [slide, setSlide] = useState(1);
   const [reporting, setReporting] = useState(false);
   const [visiting, setVisiting] = useState(false);
+  useEffect(() => { if (usingDatabase && !isSampleId(l.id)) recordView(l.id); }, [l.id]);
   useEffect(() => {
     if (immediate) return;
     const f = requestAnimationFrame(() => setShown(true));

@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { Icon } from "./Icon";
 import { fmt, PT, type Mode, type PType } from "@/lib/listing";
 import type { Account } from "@/lib/auth";
+import { daysLeft, loadStats, renewListing, type ListingStats } from "@/lib/stats";
 import {
   addPhotos, AMENITIES, deleteListing, emptyForm, FACING, formOf, FURNISHING, hasRooms, loadMine, MAX_PHOTOS, problemWith,
   removePhoto, saveListing, setStatus, typesFor, type Form, type MyListing, type MyPhoto, type Status,
@@ -39,8 +40,10 @@ export default function PostFlow({ account, dark, onToast, onOpen, onChanged, on
   const [mine, setMine] = useState<MyListing[] | null>(null);
   const [editing, setEditing] = useState<MyListing | "new" | null>(null);
   const [loadError, setLoadError] = useState("");
+  const [stats, setStats] = useState<Record<string, ListingStats>>({});
 
   const refresh = useCallback(async () => {
+    loadStats().then(setStats).catch(() => {});
     try { setMine(await loadMine()); setLoadError(""); } catch (e) { setLoadError((e as Error).message); setMine(m => m ?? []); }
   }, []);
   useEffect(() => { const t = setTimeout(refresh, 0); return () => clearTimeout(t); }, [refresh]);
@@ -57,6 +60,11 @@ export default function PostFlow({ account, dark, onToast, onOpen, onChanged, on
   const act = async (l: MyListing, status: Status, done: string) => {
     const problem = await setStatus(l.id, status);
     if (problem) onToast(problem); else { onToast(done); onChanged?.(); }
+    await refresh();
+  };
+  const renew = async (l: MyListing) => {
+    const problem = await renewListing(l.id);
+    if (problem) onToast(problem); else { onToast("Renewed for 30 more days"); onChanged?.(); }
     await refresh();
   };
   const remove = async (l: MyListing) => {
@@ -85,6 +93,9 @@ export default function PostFlow({ account, dark, onToast, onOpen, onChanged, on
         <div className="mylist">
           {mine.map(l => {
             const st = STATUS[l.status];
+            const sx = stats[l.id];
+            const left = sx?.expiresAt ? daysLeft(sx.expiresAt) : null;
+            const soon = l.status === "live" && left !== null && left <= 7;
             return (
               <article className="myl" key={l.id}>
                 <div className="myl-top">
@@ -96,12 +107,22 @@ export default function PostFlow({ account, dark, onToast, onOpen, onChanged, on
                     <div className="meta">{l.address}</div>
                   </div>
                 </div>
+                {l.status === "live" && sx && (
+                  <div className="lstats" aria-label="How this listing is doing">
+                    <div><b>{sx.views7d}</b><span>Views · 7d</span></div><div><b>{sx.enquiries}</b><span>Enquiries</span></div>
+                    <div><b>{sx.visits}</b><span>Visits</span></div><div><b>{sx.saves}</b><span>Saves</span></div>
+                  </div>
+                )}
+                {soon && <p className="myl-note warn">{left! <= 0 ? "Expires today. Renew to keep it on the map." : `Expires in ${left} ${left === 1 ? "day" : "days"}. Is it still available? Renew to keep it on the map.`}</p>}
+                {l.status === "live" && !soon && left !== null && <p className="myl-note">{`Live for ${left} more ${left === 1 ? "day" : "days"}`}</p>}
                 {l.status === "rejected" ? <p className="myl-note bad">{l.rejectReason || "The team asked for changes."}</p> : st.note && <p className="myl-note">{st.note}</p>}
                 <div className="myl-acts">
                   {l.status === "live" && <button className="btn ghost" onClick={() => onOpen(l.id)}>View</button>}
                   {(l.status === "draft" || l.status === "rejected" || l.status === "hidden") && <button className="btn ghost" onClick={() => setEditing(l)}>Edit</button>}
                   {l.status === "pending" && <button className="btn ghost" onClick={() => act(l, "draft", "Moved back to drafts")}>Withdraw</button>}
-                  {(l.status === "rejected" || l.status === "hidden" || l.status === "expired") && <button className="btn primary" onClick={() => act(l, "pending", "Sent for review")}>Send for review</button>}
+                  {(l.status === "rejected" || l.status === "hidden") && <button className="btn primary" onClick={() => act(l, "pending", "Sent for review")}>Send for review</button>}
+                  {l.status === "expired" && <><button className="btn primary" onClick={() => renew(l)}>Renew for 30 days</button><button className="btn ghost" onClick={() => act(l, "pending", "Sent for review")}>Send for review</button></>}
+                  {soon && <button className="btn primary" onClick={() => renew(l)}>Still available · Renew</button>}
                   {l.status === "live" && <button className="btn ghost" onClick={() => act(l, "hidden", "Listing hidden")}>Hide</button>}
                   {l.status === "live" && <button className="btn ghost" onClick={() => act(l, "sold_or_rented", l.mode === "rent" ? "Marked as rented" : "Marked as sold")}>{l.mode === "rent" ? "Mark rented" : "Mark sold"}</button>}
                   {(l.status === "draft" || l.status === "rejected" || l.status === "hidden") && <button className="btn ghost danger" onClick={() => remove(l)}>Delete</button>}
