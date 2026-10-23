@@ -33,10 +33,12 @@ interface Props {
   /** messaging, calling and saving need an account: show a sign-in prompt instead */
   signInRequired?: boolean;
   onNeedLogin?: () => void;
+  /** opens a chat with whoever posted the listing; omitted while chat isn't available (sample data) */
+  onMessage?: () => void;
 }
 
 /** Full property screen. Used as an overlay on the map and as the shareable /home/<id> page. */
-export default function ListingDetail({ listing: l, mode, saved, onToggleSave, onClose, onToast, immediate, loading, report, signInRequired, onNeedLogin }: Props) {
+export default function ListingDetail({ listing: l, mode, saved, onToggleSave, onClose, onToast, immediate, loading, report, signInRequired, onNeedLogin, onMessage }: Props) {
   const [shown, setShown] = useState(!!immediate);
   const [slide, setSlide] = useState(1);
   const [reporting, setReporting] = useState(false);
@@ -108,7 +110,7 @@ export default function ListingDetail({ listing: l, mode, saved, onToggleSave, o
             <button className="btn primary" onClick={() => onNeedLogin?.()}>Sign in to message or call</button>
           ) : (
             <>
-              <button className="btn ghost" onClick={() => onToast("Chat is coming soon")}>Message</button>
+              <button className="btn ghost" onClick={() => (onMessage ? onMessage() : onToast("Chat works on real listings, not the sample homes"))}>Message</button>
               <button className="btn primary" onClick={() => onToast("Calling is coming soon")}>Call</button>
             </>
           )}

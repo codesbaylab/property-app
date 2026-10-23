@@ -11,8 +11,11 @@ import { useSaved, useTheme, useToast } from "@/lib/hooks";
 import { PT, RANGE, RES, fmt, inBounds, modeFor, priceFor, spec, type Listing, type Mode, type PType } from "@/lib/listing";
 import { getListing, isSampleId, loadListings, reportListing, usingDatabase } from "@/lib/data";
 import { generateListing } from "@/lib/sample";
+import { startConversation, useUnread } from "@/lib/chat";
 
 const MapView = dynamic(() => import("./MapView"), { ssr: false });
+const Chat = dynamic(() => import("./Chat"), { ssr: false });
+const PostFlow = dynamic(() => import("./PostFlow"), { ssr: false });
 
 type Sheet = null | "card" | "list" | "filter";
 const START: [number, number] = [75.7804, 11.2588]; // Kozhikode, until the browser tells us where the user is
@@ -20,6 +23,8 @@ const START: [number, number] = [75.7804, 11.2588]; // Kozhikode, until the brow
 export default function Explore() {
   const { account, ready, signIn, signUp, signOut } = useAuth();
   const { saved, toggle } = useSaved(account?.id ?? null);
+  const { unread, refreshUnread } = useUnread(usingDatabase ? account?.id ?? null : null);
+  const [chatId, setChatId] = useState<string | null>(null);
   const { pref, setPref, dark } = useTheme();
   const { toast, toastMsg, toastOn } = useToast();
 
@@ -119,16 +124,22 @@ export default function Explore() {
   // With a database connected, saving, messaging and posting need an account. Guests only see Explore and Sign in.
   const gated = usingDatabase && !account;
   const shownPage: Page = gated && (page === "saved" || page === "inbox" || page === "post") ? "explore" : page;
-  const go = (p: Page) => { setPage(p); setDetailId(null); closeAll(); };
+  const go = (p: Page) => { setPage(p); setChatId(null); setDetailId(null); closeAll(); };
   const needLogin = (msg: string) => { toast(msg); go("profile"); };
+  const startChat = async (listingId: string) => {
+    const r = await startConversation(listingId);
+    if ("error" in r) { toast(r.error); return; }
+    setChatId(r.id); setPage("inbox"); setDetailId(null); closeAll();
+  };
   const toggleSave = (id: string) => {
     if (gated) { needLogin(ready ? "Sign in to save homes" : "One moment…"); return; }
     toggle(id);
   };
-  // the shareable listing page sends guests here with /#profile
+  // the shareable listing page sends guests here with /#profile, and people who tap Message there with /#chat=<id>
   useEffect(() => {
-    if (location.hash !== "#profile") return;
-    const t = setTimeout(() => setPage("profile"), 0);
+    const chat = /^#chat=([0-9a-f-]{36})$/i.exec(location.hash)?.[1];
+    if (location.hash !== "#profile" && !chat) return;
+    const t = setTimeout(() => { if (chat) { setChatId(chat); setPage("inbox"); } else setPage("profile"); }, 0);
     return () => clearTimeout(t);
   }, []);
   const showBeds = !type || RES.includes(type);
@@ -191,14 +202,14 @@ export default function Explore() {
         <button className={shownPage === "explore" ? "on" : ""} onClick={() => go("explore")}><Icon name="map" /><span>Explore</span></button>
         {!gated && <button className={shownPage === "saved" ? "on" : ""} onClick={() => go("saved")}><Icon name="heart" /><span>Saved</span>{saved.size > 0 && <i className="bdg">{saved.size}</i>}</button>}
         {!gated && <button className={`post${shownPage === "post" ? " on" : ""}`} onClick={() => go("post")} aria-label="Post a property"><Icon name="plus" /><span>Post</span></button>}
-        {!gated && <button className={shownPage === "inbox" ? "on" : ""} onClick={() => go("inbox")}><Icon name="chat" /><span>Inbox</span></button>}
+        {!gated && <button className={shownPage === "inbox" ? "on" : ""} onClick={() => go("inbox")}><Icon name="chat" /><span>Inbox</span>{unread > 0 && <i className="bdg">{unread}</i>}</button>}
         <button className={`prof${shownPage === "profile" ? " on" : ""}`} onClick={() => go("profile")}><Icon name="user" /><span>{gated ? "Sign in" : "Profile"}</span></button>
       </nav>
 
       <div className={`view${shownPage !== "explore" ? " open" : ""}`}>
         {shownPage === "saved" && <SavedView items={savedItems} mode={mode} savedIds={saved} onToggle={toggleSave} onOpen={setDetailId} />}
-        {shownPage === "inbox" && <InboxView />}
-        {shownPage === "post" && <PostView />}
+        {shownPage === "inbox" && (account && usingDatabase ? <Chat account={account} openId={chatId} onOpen={setChatId} onToast={toast} onOpenListing={setDetailId} onRead={refreshUnread} /> : <InboxView />)}
+        {shownPage === "post" && (account ? <PostFlow account={account} dark={dark} onToast={toast} onOpen={setDetailId} /> : <PostView />)}
         {shownPage === "profile" && <ProfileView pref={pref} onPref={setPref} onToast={toast} account={account} canSignIn={usingDatabase} signIn={signIn} signUp={signUp} signOut={signOut} />}
       </div>
 
@@ -258,6 +269,7 @@ export default function Explore() {
         <ListingDetail key={detail.id} listing={detail} mode={mode} saved={saved.has(detail.id)}
           loading={!isSampleId(detail.id) && !detail.full}
           report={usingDatabase && !isSampleId(detail.id) ? { signedIn: !!account, send: (reason, details) => (account ? reportListing(account.id, detail.id, reason, details) : Promise.resolve("Sign in first.")) } : undefined}
+          onMessage={usingDatabase && !isSampleId(detail.id) ? () => startChat(detail.id) : undefined}
           signInRequired={gated} onNeedLogin={() => needLogin("Sign in to message, call or save")}
           onToggleSave={toggleSave} onClose={() => setDetailId(null)} onToast={toast} />
       )}

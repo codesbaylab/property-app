@@ -13,7 +13,7 @@ export interface FlyTo { lat: number; lng: number; zoom?: number; key: number }
  * Map style. To switch provider set NEXT_PUBLIC_MAP_STYLE_LIGHT / NEXT_PUBLIC_MAP_STYLE_DARK
  * to a style URL (for example from MapTiler). Without them the free Esri grey basemap is used (demo only).
  */
-function styleFor(dark: boolean): StyleSpecification | string {
+export function styleFor(dark: boolean): StyleSpecification | string {
   const url = dark ? process.env.NEXT_PUBLIC_MAP_STYLE_DARK : process.env.NEXT_PUBLIC_MAP_STYLE_LIGHT;
   if (url) return url;
   const t = (name: string) => `https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/${name}/MapServer/tile/{z}/{y}/{x}`;
