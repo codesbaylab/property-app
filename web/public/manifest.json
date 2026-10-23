@@ -1,12 +1,12 @@
 {
-  "id": "./",
+  "id": "/",
   "name": "Nestmap",
   "short_name": "Nestmap",
   "description": "Find homes on a map. Buy, rent, no noise.",
-  "start_url": "./index.html",
-  "scope": "./",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "orientation": "portrait-primary",
+  "orientation": "any",
   "background_color": "#ffffff",
   "theme_color": "#0f766e",
   "categories": [

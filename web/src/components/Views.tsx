@@ -41,46 +41,37 @@ export function SavedView({ items, mode, savedIds, onToggle, onOpen }: { items: 
   );
 }
 
-export function InboxView({ onToast }: { onToast: (m: string) => void }) {
-  const threads: [string, string, string, string, boolean][] = [
-    ["Anil Kumar", "24 Beach Rd", "Yes, available Saturday 11am?", "5m", true],
-    ["Fathima R.", "12 Lake View St", "Parking for 2 cars.", "2h", true],
-    ["Joseph (owner)", "3 Canal Rd", "Thanks for your interest!", "1d", false],
-  ];
+export function InboxView() {
   return (
     <div className="vw">
       <h1>Inbox</h1>
       <div className="sub">Conversations with agents and owners</div>
-      <div className="list">
-        {threads.map(t => (
-          <button key={t[0]} className="li" onClick={() => onToast("Chat opens here in the full app")}>
-            <div className="av">{t[0][0]}</div>
-            <div className="tx"><b>{t[0]}</b><small>{t[1]} · {t[2]}</small></div>
-            <span className="meta">{t[3]}</span>{t[4] && <i className="unread" />}
-          </button>
-        ))}
+      <div className="empty">
+        <div className="ei"><Icon name="chat" /></div>
+        <h3>No messages yet</h3>
+        Chat with agents and owners is coming soon. Your conversations will appear here.
       </div>
     </div>
   );
 }
 
-export function PostView({ onToast }: { onToast: (m: string) => void }) {
-  const steps = [["1", "Add photos and details", "Price, size, rooms and a short description"], ["2", "Drop a pin on the map", "So people find the exact spot"], ["3", "We review, then it goes live", "Verified listings get more enquiries"]];
+export function PostView() {
+  const steps = [["1", "Add photos and details", "Price, size, rooms and a short description"], ["2", "Drop a pin on the map", "So people find the exact spot"], ["3", "We review, then it goes live", "Every listing is checked by our team first"]];
   return (
     <div className="vw">
       <h1>Post a property</h1>
       <div className="sub">Reach buyers and renters near you</div>
       <div className="hero">
         <h2>List your property in 3 minutes</h2>
-        <p>Free for up to 3 listings. Our team reviews every listing, usually within an hour.</p>
-        <button className="btn" onClick={() => onToast("Posting opens here in the full app")}>Start posting</button>
+        <p>Free for up to 3 listings. Our team reviews every listing before it goes live.</p>
+        <button className="btn" disabled>Posting opens soon</button>
       </div>
       <div className="steps">{steps.map(s => <div className="step" key={s[0]}><i>{s[0]}</i><div><b>{s[1]}</b><div className="meta">{s[2]}</div></div></div>)}</div>
       <div className="list">
-        <button className="li" onClick={() => onToast("Agent sign-up opens here in the full app")}>
+        <div className="li">
           <div className="ic"><Icon name="verified" /></div>
-          <div className="tx"><b>I&apos;m an agent</b><small>Get a verified badge and a lead inbox</small></div><Icon name="chevron" />
-        </button>
+          <div className="tx"><b>I&apos;m an agent</b><small>Get a verified badge and a lead inbox</small></div><span className="soon">Soon</span>
+        </div>
       </div>
     </div>
   );
@@ -94,27 +85,46 @@ interface ProfileProps {
   /** true when the app is connected to the database, so signing in is possible */
   canSignIn: boolean;
   signIn: (email: string, password: string) => Promise<string | null>;
+  signUp: (name: string, email: string, password: string) => Promise<{ error?: string; confirm?: boolean }>;
   signOut: () => Promise<void>;
 }
 
-export function ProfileView({ pref, onPref, onToast, account, canSignIn, signIn, signOut }: ProfileProps) {
+export function ProfileView({ pref, onPref, onToast, account, canSignIn, signIn, signUp, signOut }: ProfileProps) {
+  const [mode, setMode] = useState<"in" | "up">("in");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [sentTo, setSentTo] = useState("");   // set after sign-up when the email must be confirmed first
+
+  const switchTo = (m: "in" | "up") => { setMode(m); setError(""); setSentTo(""); };
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    setBusy(true); setError("");
-    const problem = await signIn(email, password);
+    setError("");
+    if (mode === "up" && password.length < 8) { setError("Use at least 8 characters for your password."); return; }
+    setBusy(true);
+    if (mode === "in") {
+      const problem = await signIn(email, password);
+      if (problem) setError(problem); else { setPassword(""); onToast("Signed in"); }
+    } else {
+      const r = await signUp(name, email, password);
+      if (r.error) setError(r.error);
+      else if (r.confirm) { setSentTo(email.trim()); setPassword(""); }
+      else { setPassword(""); onToast(`Welcome to Nestmap, ${name.trim().split(" ")[0] || "friend"}!`); }
+    }
     setBusy(false);
-    if (problem) setError(problem); else { setPassword(""); onToast("Signed in"); }
   };
 
-  const rows: [string, string, string][] = [["globe", "Language", "English"], ["bell", "Alerts", "Price drops, replies"], ["shield", "Privacy & data", "Your number stays private"], ["help", "Help & support", "FAQ and contact"]];
+  const rows: [string, string, string, boolean][] = [   // icon, title, note, needs an account
+    ["globe", "Language", "English", false], ["bell", "Alerts", "Price drops and replies", true],
+    ["shield", "Privacy & data", "Your number stays private", true], ["help", "Help & support", "FAQ and contact", false],
+  ];
+
   return (
     <div className="vw">
-      <h1>Profile</h1>
-      <div className="sub">{account ? "Your account" : "Log in to save homes and message agents"}</div>
+      <h1>{account ? "Profile" : "Sign in"}</h1>
+      <div className="sub">{account ? "Your account" : "Save homes, contact agents and post your own property"}</div>
 
       {account ? (
         <div className="login">
@@ -132,37 +142,48 @@ export function ProfileView({ pref, onPref, onToast, account, canSignIn, signIn,
           <button className="btn ghost" style={{ marginTop: 14, width: "100%" }} onClick={async () => { await signOut(); onToast("Signed out"); }}>Sign out</button>
         </div>
       ) : canSignIn ? (
-        <form className="login" onSubmit={submit}>
-          <div className="who"><div className="av"><Icon name="user" /></div><div><b>Welcome to Nestmap</b><div className="meta">Sign in to continue</div></div></div>
-          <div className="stack">
-            <input type="email" autoComplete="username" placeholder="Email" aria-label="Email" value={email} onChange={e => setEmail(e.target.value)} required />
-            <input type="password" autoComplete="current-password" placeholder="Password" aria-label="Password" value={password} onChange={e => setPassword(e.target.value)} required />
-            {error && <div className="err" role="alert">{error}</div>}
-            <button className="btn primary" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
-            <div className="meta" style={{ fontSize: 12.5 }}>Phone-number login is coming soon.</div>
+        sentTo ? (
+          <div className="login">
+            <div className="who"><div className="av"><Icon name="chat" /></div><div><b>Check your email</b><div className="meta">We sent a link to {sentTo}</div></div></div>
+            <p className="meta" style={{ margin: "14px 0" }}>Open the email and tap the link to confirm your account. Then come back here and sign in.</p>
+            <button className="btn primary" style={{ width: "100%" }} onClick={() => { setMode("in"); setSentTo(""); }}>Go to sign in</button>
           </div>
-        </form>
+        ) : (
+          <form className="login" onSubmit={submit}>
+            <div className="seg full" role="tablist" aria-label="Sign in or create an account">
+              <button type="button" role="tab" aria-selected={mode === "in"} className={mode === "in" ? "on" : ""} onClick={() => switchTo("in")}>Sign in</button>
+              <button type="button" role="tab" aria-selected={mode === "up"} className={mode === "up" ? "on" : ""} onClick={() => switchTo("up")}>Create account</button>
+            </div>
+            <div className="stack">
+              {mode === "up" && <input type="text" autoComplete="name" placeholder="Your name" aria-label="Your name" value={name} onChange={e => setName(e.target.value)} required maxLength={60} />}
+              <input type="email" autoComplete="username" placeholder="Email" aria-label="Email" value={email} onChange={e => setEmail(e.target.value)} required />
+              <input type="password" autoComplete={mode === "in" ? "current-password" : "new-password"} placeholder={mode === "in" ? "Password" : "Password (8 or more characters)"} aria-label="Password" value={password} onChange={e => setPassword(e.target.value)} required />
+              {error && <div className="err" role="alert">{error}</div>}
+              <button className="btn primary" disabled={busy}>{busy ? (mode === "in" ? "Signing in…" : "Creating account…") : mode === "in" ? "Sign in" : "Create account"}</button>
+              <div className="meta" style={{ fontSize: 12.5 }}>{mode === "in" ? "New here? Choose Create account above." : "You'll be able to save homes right away."} Phone-number login is coming soon.</div>
+            </div>
+          </form>
+        )
       ) : (
         <div className="login">
-          <div className="who"><div className="av"><Icon name="user" /></div><div><b>Welcome to Nestmap</b><div className="meta">Enter your phone number to continue</div></div></div>
-          <div className="phone"><input inputMode="tel" placeholder="+91 98765 43210" aria-label="Phone number" /><button className="btn primary" onClick={() => onToast("OTP sent (demo)")}>Send OTP</button></div>
+          <div className="who"><div className="av"><Icon name="user" /></div><div><b>Sign-in isn&apos;t set up yet</b><div className="meta">This copy of the app isn&apos;t connected to a database.</div></div></div>
         </div>
       )}
 
       <div className="list">
         {account?.adminRole && (
-          <button className="li" onClick={() => onToast("The admin dashboard is the next big piece")}>
+          <a className="li" href="/admin">
             <div className="ic"><Icon name="shield" /></div>
             <div className="tx"><b>Admin dashboard</b><small>{ADMIN_LABEL[account.adminRole]} · review queue, users, reports</small></div><Icon name="chevron" />
-          </button>
+          </a>
         )}
         <div className="li">
           <div className="ic"><Icon name="moon" /></div><div className="tx"><b>Appearance</b></div>
           <div className="seg">{(["auto", "light", "dark"] as ThemePref[]).map(t => <button key={t} className={pref === t ? "on" : ""} onClick={() => onPref(t)}>{t[0].toUpperCase() + t.slice(1)}</button>)}</div>
         </div>
-        {rows.map(r => (
-          <button key={r[1]} className="li" onClick={() => onToast(`${r[1]} opens here in the full app`)}>
-            <div className="ic"><Icon name={r[0]} /></div><div className="tx"><b>{r[1]}</b><small>{r[2]}</small></div><Icon name="chevron" />
+        {rows.filter(r => account || !r[3]).map(r => (
+          <button key={r[1]} className="li" onClick={() => onToast(`${r[1]} is coming soon`)}>
+            <div className="ic"><Icon name={r[0]} /></div><div className="tx"><b>{r[1]}</b><small>{r[2]}</small></div><span className="soon">Soon</span>
           </button>
         ))}
       </div>

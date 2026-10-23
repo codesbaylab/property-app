@@ -52,6 +52,7 @@ export function generateListing(id: string, land?: [number, number][]): Listing 
     addr: `${10 + Math.floor(rnd() * 90)}, ${STREETS[Math.floor(rnd() * STREETS.length)]}`,
     img: `https://picsum.photos/seed/${id}/600/450`,
     approx: !spot,
+    verified: true,
   };
 }
 

@@ -25,7 +25,7 @@ const hashOf = (id: string) => { let h = 0; for (const c of id) h = (h * 31 + c.
 
 interface PinRow {
   id: string; lat: number; lng: number; mode: Mode; price: number | string; type: string;
-  beds: number; baths: number; area_sqft: number | null; address: string; cover_path: string | null;
+  beds: number; baths: number; area_sqft: number | null; address: string; cover_path: string | null; is_verified?: boolean;
 }
 const priced = (mode: Mode, price: number | string) => ({ buy: mode === "buy" ? Number(price) : 0, rent: mode === "rent" ? Number(price) : 0 });
 
@@ -34,6 +34,7 @@ function fromPin(r: PinRow): Listing {
     id: r.id, n: hashOf(r.id), lat: r.lat, lng: r.lng, type: LABEL[r.type] ?? "Apartment",
     beds: r.beds, baths: r.baths, sqft: r.area_sqft ?? 0, ...priced(r.mode, r.price),
     addr: r.address, img: r.cover_path ? photoUrl(r.cover_path) : `https://picsum.photos/seed/${r.id}/600/450`,
+    verified: !!r.is_verified,
   };
 }
 
@@ -50,7 +51,7 @@ export async function loadListings(view: Bounds, q: Query, onBatch: (ls: Listing
   onBatch((data as PinRow[]).map(fromPin));
 }
 
-interface DetailRow extends Omit<PinRow, "cover_path"> {
+interface DetailRow extends Omit<PinRow, "cover_path" | "is_verified"> {
   locality: string | null; city: string | null; description: string | null; amenities: string[] | null;
   floor: number | null; facing: string | null; is_verified: boolean; photos: string[];
   agent: { name: string | null; verified: boolean } | null;
@@ -68,7 +69,7 @@ export async function getListing(id: string): Promise<Listing | null> {
     id: r.id, n: hashOf(r.id), lat: r.lat, lng: r.lng, type: LABEL[r.type] ?? "Apartment",
     beds: r.beds, baths: r.baths, sqft: r.area_sqft ?? 0, ...priced(r.mode, r.price),
     addr: [r.address, r.locality].filter(Boolean).join(", "), img: photos[0] ?? `https://picsum.photos/seed/${r.id}/600/450`,
-    full: true, description: r.description ?? undefined, amenities: r.amenities ?? undefined, photos: photos.length ? photos : undefined,
+    full: true, verified: r.is_verified, description: r.description ?? undefined, amenities: r.amenities ?? undefined, photos: photos.length ? photos : undefined,
     facing: r.facing ?? undefined, floor: r.floor ?? undefined,
     agent: r.agent?.name ? { name: r.agent.name, verified: r.agent.verified } : undefined,
   };

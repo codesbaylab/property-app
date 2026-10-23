@@ -30,10 +30,13 @@ interface Props {
   loading?: boolean;
   /** lets signed-in people report the listing to the team (returns an error message or null) */
   report?: { signedIn: boolean; send: (reason: string, details: string) => Promise<string | null> };
+  /** messaging, calling and saving need an account: show a sign-in prompt instead */
+  signInRequired?: boolean;
+  onNeedLogin?: () => void;
 }
 
 /** Full property screen. Used as an overlay on the map and as the shareable /home/<id> page. */
-export default function ListingDetail({ listing: l, mode, saved, onToggleSave, onClose, onToast, immediate, loading, report }: Props) {
+export default function ListingDetail({ listing: l, mode, saved, onToggleSave, onClose, onToast, immediate, loading, report, signInRequired, onNeedLogin }: Props) {
   const [shown, setShown] = useState(!!immediate);
   const [slide, setSlide] = useState(1);
   const [reporting, setReporting] = useState(false);
@@ -74,7 +77,7 @@ export default function ListingDetail({ listing: l, mode, saved, onToggleSave, o
           <div className="dbody">
             <div className="tags">
               <span className="tag">{m === "rent" ? "For rent" : "For sale"} · {l.type}</span>
-              <span className="tag ok"><Icon name="verified" />Verified</span>
+              {l.verified && <span className="tag ok"><Icon name="verified" />Verified</span>}
             </div>
             <div className="big">{price}{m === "rent" && <small> / month</small>}</div>
             <div className="meta" style={{ marginTop: 4, fontSize: 15 }}>{l.addr}</div>
@@ -89,20 +92,26 @@ export default function ListingDetail({ listing: l, mode, saved, onToggleSave, o
               <h3>Listed by</h3>
               <div className="agent">
                 <div className="av">{agentOf(l)[0]}</div>
-                <div style={{ flex: 1 }}><b>{agentOf(l)}</b><small>Verified agent · replies in ~1 hr</small></div>
-                <span className="tag ok" style={{ margin: 0 }}><Icon name="verified" /></span>
+                <div style={{ flex: 1 }}><b>{agentOf(l)}</b><small>{l.agent ? (l.agent.verified ? "Verified agent" : "Owner") : "Listing agent"}</small></div>
+                {(l.agent?.verified ?? true) && <span className="tag ok" style={{ margin: 0 }}><Icon name="verified" /></span>}
               </div>
             </>)}
-            {report && <button className="reportlink" onClick={() => (report.signedIn ? setReporting(true) : onToast("Sign in from your Profile to report a listing"))}>Report this listing</button>}
+            {report?.signedIn && <button className="reportlink" onClick={() => setReporting(true)}>Report this listing</button>}
           </div>
         </div>
       </div>
       {reporting && report && <ReportSheet onClose={() => setReporting(false)} send={report.send} onToast={onToast} />}
       <div className="dbar glass">
         <div className="in">
-          <div><div className="dp">{price}{m === "rent" && <small style={{ fontWeight: 500, color: "var(--muted)" }}> /mo</small>}</div><div className="dm">Verified agent · replies in ~1 hr</div></div>
-          <button className="btn ghost" onClick={() => onToast("Chat opens here in the full app")}>Message</button>
-          <button className="btn primary" onClick={() => onToast("Calling through Nestmap keeps your number private")}>Call</button>
+          <div><div className="dp">{price}{m === "rent" && <small style={{ fontWeight: 500, color: "var(--muted)" }}> /mo</small>}</div><div className="dm">{l.agent?.verified ? "Verified agent" : "Listing agent"}</div></div>
+          {signInRequired ? (
+            <button className="btn primary" onClick={() => onNeedLogin?.()}>Sign in to message or call</button>
+          ) : (
+            <>
+              <button className="btn ghost" onClick={() => onToast("Chat is coming soon")}>Message</button>
+              <button className="btn primary" onClick={() => onToast("Calling is coming soon")}>Call</button>
+            </>
+          )}
         </div>
       </div>
     </>

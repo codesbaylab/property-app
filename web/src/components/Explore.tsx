@@ -18,7 +18,7 @@ type Sheet = null | "card" | "list" | "filter";
 const START: [number, number] = [75.7804, 11.2588]; // Kozhikode, until the browser tells us where the user is
 
 export default function Explore() {
-  const { account, signIn, signOut } = useAuth();
+  const { account, ready, signIn, signUp, signOut } = useAuth();
   const { saved, toggle } = useSaved(account?.id ?? null);
   const { pref, setPref, dark } = useTheme();
   const { toast, toastMsg, toastOn } = useToast();
@@ -116,7 +116,21 @@ export default function Explore() {
     closeSheets();
   };
 
+  // With a database connected, saving, messaging and posting need an account. Guests only see Explore and Sign in.
+  const gated = usingDatabase && !account;
+  const shownPage: Page = gated && (page === "saved" || page === "inbox" || page === "post") ? "explore" : page;
   const go = (p: Page) => { setPage(p); setDetailId(null); closeAll(); };
+  const needLogin = (msg: string) => { toast(msg); go("profile"); };
+  const toggleSave = (id: string) => {
+    if (gated) { needLogin(ready ? "Sign in to save homes" : "One moment…"); return; }
+    toggle(id);
+  };
+  // the shareable listing page sends guests here with /#profile
+  useEffect(() => {
+    if (location.hash !== "#profile") return;
+    const t = setTimeout(() => setPage("profile"), 0);
+    return () => clearTimeout(t);
+  }, []);
   const showBeds = !type || RES.includes(type);
   const [rMin, rMax, rStep] = RANGE[mode];
   const filtersOn = !!maxPrice || beds > 0;
@@ -172,20 +186,20 @@ export default function Explore() {
       <button className="listbtn" onClick={() => setSheet("list")}><Icon name="list" /><span>List · {inView.length}</span></button>
       <button className="locate glass" onClick={() => locate(14)} aria-label="My location"><Icon name="locate" /></button>
 
-      <nav className="nav glass" aria-label="Main">
+      <nav className={`nav glass${gated ? " guest" : ""}`} aria-label="Main">
         <div className="brandmark">N</div>
-        <button className={page === "explore" ? "on" : ""} onClick={() => go("explore")}><Icon name="map" /><span>Explore</span></button>
-        <button className={page === "saved" ? "on" : ""} onClick={() => go("saved")}><Icon name="heart" /><span>Saved</span>{saved.size > 0 && <i className="bdg">{saved.size}</i>}</button>
-        <button className={`post${page === "post" ? " on" : ""}`} onClick={() => go("post")} aria-label="Post a property"><Icon name="plus" /><span>Post</span></button>
-        <button className={page === "inbox" ? "on" : ""} onClick={() => go("inbox")}><Icon name="chat" /><span>Inbox</span><i className="bdg">2</i></button>
-        <button className={`prof${page === "profile" ? " on" : ""}`} onClick={() => go("profile")}><Icon name="user" /><span>Profile</span></button>
+        <button className={shownPage === "explore" ? "on" : ""} onClick={() => go("explore")}><Icon name="map" /><span>Explore</span></button>
+        {!gated && <button className={shownPage === "saved" ? "on" : ""} onClick={() => go("saved")}><Icon name="heart" /><span>Saved</span>{saved.size > 0 && <i className="bdg">{saved.size}</i>}</button>}
+        {!gated && <button className={`post${shownPage === "post" ? " on" : ""}`} onClick={() => go("post")} aria-label="Post a property"><Icon name="plus" /><span>Post</span></button>}
+        {!gated && <button className={shownPage === "inbox" ? "on" : ""} onClick={() => go("inbox")}><Icon name="chat" /><span>Inbox</span></button>}
+        <button className={`prof${shownPage === "profile" ? " on" : ""}`} onClick={() => go("profile")}><Icon name="user" /><span>{gated ? "Sign in" : "Profile"}</span></button>
       </nav>
 
-      <div className={`view${page !== "explore" ? " open" : ""}`}>
-        {page === "saved" && <SavedView items={savedItems} mode={mode} savedIds={saved} onToggle={toggle} onOpen={setDetailId} />}
-        {page === "inbox" && <InboxView onToast={toast} />}
-        {page === "post" && <PostView onToast={toast} />}
-        {page === "profile" && <ProfileView pref={pref} onPref={setPref} onToast={toast} account={account} canSignIn={usingDatabase} signIn={signIn} signOut={signOut} />}
+      <div className={`view${shownPage !== "explore" ? " open" : ""}`}>
+        {shownPage === "saved" && <SavedView items={savedItems} mode={mode} savedIds={saved} onToggle={toggleSave} onOpen={setDetailId} />}
+        {shownPage === "inbox" && <InboxView />}
+        {shownPage === "post" && <PostView />}
+        {shownPage === "profile" && <ProfileView pref={pref} onPref={setPref} onToast={toast} account={account} canSignIn={usingDatabase} signIn={signIn} signUp={signUp} signOut={signOut} />}
       </div>
 
       <div className={`scrim${sheet && sheet !== "card" ? " on" : ""}`} onClick={closeAll} />
@@ -196,8 +210,8 @@ export default function Explore() {
           <div className="media" onClick={() => setDetailId(card.id)} style={{ cursor: "pointer" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={card.img} alt="" />
-            <div className="badge"><span className="b"><Icon name="verified" />Verified</span></div>
-            <Heart on={saved.has(card.id)} id={card.id} cls="hbtn" onToggle={toggle} />
+            {card.verified && <div className="badge"><span className="b"><Icon name="verified" />Verified</span></div>}
+            <Heart on={saved.has(card.id)} id={card.id} cls="hbtn" onToggle={toggleSave} />
           </div>
           <div className="row"><span className="price">{fmt(priceFor(card, cm), cm)}{cm === "rent" && <small>/mo</small>}</span><span className="pill">{card.type}</span></div>
           <div className="meta">{spec(card)}</div><div className="addr">{card.addr}</div>
@@ -244,7 +258,8 @@ export default function Explore() {
         <ListingDetail key={detail.id} listing={detail} mode={mode} saved={saved.has(detail.id)}
           loading={!isSampleId(detail.id) && !detail.full}
           report={usingDatabase && !isSampleId(detail.id) ? { signedIn: !!account, send: (reason, details) => (account ? reportListing(account.id, detail.id, reason, details) : Promise.resolve("Sign in first.")) } : undefined}
-          onToggleSave={toggle} onClose={() => setDetailId(null)} onToast={toast} />
+          signInRequired={gated} onNeedLogin={() => needLogin("Sign in to message, call or save")}
+          onToggleSave={toggleSave} onClose={() => setDetailId(null)} onToast={toast} />
       )}
       <Toast msg={toastMsg} on={toastOn} />
     </>

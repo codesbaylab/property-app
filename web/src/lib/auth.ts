@@ -49,5 +49,20 @@ export function useAuth() {
   }, []);
   const signOut = useCallback(async () => { await supabase().auth.signOut(); }, []);
 
-  return { account, ready, signIn, signOut };
+  /** Creates an account. `confirm` is true when Supabase wants the email address confirmed before the first sign-in. */
+  const signUp = useCallback(async (name: string, email: string, password: string): Promise<{ error?: string; confirm?: boolean }> => {
+    const { data, error } = await supabase().auth.signUp({ email: email.trim(), password, options: { data: { name: name.trim() }, emailRedirectTo: location.origin } });
+    if (error) {
+      const m = error.message.toLowerCase();
+      if (m.includes("already registered")) return { error: "An account with this email already exists. Try signing in instead." };
+      if (m.includes("rate limit")) return { error: "Too many sign-up emails were sent. Please try again in a little while." };
+      if (m.includes("invalid") && m.includes("email")) return { error: "That email address doesn't look right." };
+      return { error: error.message };
+    }
+    // Supabase hides whether an email is taken: an existing address comes back as a user with no identities
+    if (data.user && data.user.identities?.length === 0) return { error: "An account with this email already exists. Try signing in instead." };
+    return data.session ? {} : { confirm: true };
+  }, []);
+
+  return { account, ready, signIn, signUp, signOut };
 }

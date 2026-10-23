@@ -35,6 +35,8 @@ export interface Listing {
   // the fields below exist for listings that come from the database
   /** true once the full record (description, photos, agent) has been loaded */
   full?: boolean;
+  /** the Nestmap team has checked this listing */
+  verified?: boolean;
   description?: string;
   amenities?: string[];
   photos?: string[];
