@@ -57,7 +57,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
   if (!ctx) {
     return (
       <Gate title="No access">
-        <p>{account.email} is not on the Nestmap admin team.</p>
+        <p>{account.email} is not on the Nexovo admin team.</p>
         <div className="adm-actions"><Link className="adm-btn" href="/">Back to the app</Link><button className="adm-btn" onClick={() => signOut()}>Sign out</button></div>
       </Gate>
     );
@@ -110,7 +110,7 @@ function StaffSignIn({ signIn }: { signIn: (email: string, password: string) => 
     if (problem) setError(problem);
   };
   return (
-    <Gate title="Nestmap admin">
+    <Gate title="Nexovo admin">
       <p>Sign in with your team account.</p>
       <form onSubmit={submit} className="adm-form">
         <input type="email" autoComplete="username" placeholder="Email" aria-label="Email" value={email} onChange={e => setEmail(e.target.value)} required />

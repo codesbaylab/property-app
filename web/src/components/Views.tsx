@@ -118,7 +118,7 @@ export function ProfileView({ pref, onPref, onToast, account, canSignIn, signIn,
       const r = await signUp(name, email, password);
       if (r.error) setError(r.error);
       else if (r.confirm) { setSentTo(email.trim()); setPassword(""); }
-      else { setPassword(""); onToast(`Welcome to Nestmap, ${name.trim().split(" ")[0] || "friend"}!`); }
+      else { setPassword(""); onToast(`Welcome to Nexovo, ${name.trim().split(" ")[0] || "friend"}!`); }
     }
     setBusy(false);
   };

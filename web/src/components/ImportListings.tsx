@@ -42,7 +42,7 @@ export default function ImportListings({ account, onBack, onToast, onDone }: Pro
 
       <div className="steps">
         <div className="step"><i>1</i><div><b>Get the template</b><div className="meta">One home per row. Save your sheet as CSV.</div>
-          <a className="btn ghost" style={{ display: "inline-block", marginTop: 8, padding: "9px 16px" }} href={template} download="nestmap-import-template.csv">Download template</a></div></div>
+          <a className="btn ghost" style={{ display: "inline-block", marginTop: 8, padding: "9px 16px" }} href={template} download="nexovo-import-template.csv">Download template</a></div></div>
         <div className="step"><i>2</i><div><b>Choose your file</b><div className="meta">We check every row before adding anything.</div>
           <label className="btn primary docadd" style={{ marginTop: 8, padding: "9px 16px", display: "inline-flex" }}><Icon name="plus" />{name || "Choose CSV file"}
             <input type="file" accept=".csv,text/csv" hidden onChange={e => { read(e.target.files?.[0]); e.target.value = ""; }} /></label></div></div>

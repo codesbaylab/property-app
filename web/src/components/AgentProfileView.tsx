@@ -19,7 +19,7 @@ export default function AgentProfileView({ agent }: { agent: AgentProfile }) {
           <div style={{ minWidth: 0 }}>
             <h1 style={{ fontSize: 26 }}>{agent.name}</h1>
             <div className="meta">{[agent.agency, agent.city].filter(Boolean).join(" · ")}</div>
-            <div className="tags" style={{ marginTop: 8 }}><span className="tag ok"><Icon name="verified" />Verified agent</span><span className="tag">On Nestmap since {since}</span></div>
+            <div className="tags" style={{ marginTop: 8 }}><span className="tag ok"><Icon name="verified" />Verified agent</span><span className="tag">On Nexovo since {since}</span></div>
           </div>
         </div>
         <h2 className="vh" style={{ fontSize: 17 }}>{agent.liveCount} {agent.liveCount === 1 ? "home" : "homes"} listed</h2>

@@ -36,7 +36,7 @@ export async function loadLeads(): Promise<Lead[]> {
   const { data, error } = await supabase().rpc("my_leads");
   if (error) throw new Error("Could not load your leads.");
   return (data as LeadRow[]).map(r => ({
-    id: r.id, listingId: r.listing_id, stage: r.stage, lastMessageAt: r.last_message_at, buyerName: r.buyer?.name || "Nestmap user",
+    id: r.id, listingId: r.listing_id, stage: r.stage, lastMessageAt: r.last_message_at, buyerName: r.buyer?.name || "Nexovo user",
     address: r.listing.address, price: Number(r.listing.price), mode: r.listing.mode, type: TYPE[r.listing.type] ?? r.listing.type,
     cover: r.listing.cover ? photoUrl(r.listing.cover) : null, last: r.last, unread: Number(r.unread), visit: r.visit,
   }));

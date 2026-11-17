@@ -5,7 +5,7 @@ export const metadata: Metadata = { title: "Privacy policy" };
 
 export default function Privacy() {
   return (
-    <Legal title="Privacy policy" intro="This explains what Nestmap collects about you, why, and the choices you have. We collect only what the app needs to work.">
+    <Legal title="Privacy policy" intro="This explains what Nexovo collects about you, why, and the choices you have. We collect only what the app needs to work.">
       <h2>What we collect</h2>
       <ul>
         <li><b>Account:</b> your name, email address and password (stored securely, never in plain text).</li>
@@ -31,7 +31,7 @@ export default function Privacy() {
         <li>Our review team can see listings, reports and account details when they need to, to keep the platform safe.</li>
       </ul>
 
-      <h2>Who helps us run Nestmap</h2>
+      <h2>Who helps us run Nexovo</h2>
       <p>We use trusted services to host the app, store data and photos, and show maps. They process data only to provide those services. We may also share information when the law requires it.</p>
 
       <h2>How long we keep it</h2>
@@ -46,7 +46,7 @@ export default function Privacy() {
       <p>You can use these rights under India&apos;s Digital Personal Data Protection Act, 2023. Reach us through Help &amp; support in your Profile.</p>
 
       <h2>Children</h2>
-      <p>Nestmap is for people 18 and older. We do not knowingly collect data from children.</p>
+      <p>Nexovo is for people 18 and older. We do not knowingly collect data from children.</p>
 
       <h2>Changes</h2>
       <p>If we change this policy we will update the date above, and tell you in the app if the change is important.</p>

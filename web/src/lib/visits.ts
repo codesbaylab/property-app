@@ -60,7 +60,7 @@ export async function loadVisits(): Promise<Visit[]> {
   return (data as VisitRow[]).map(r => ({
     id: r.id, listingId: r.listing_id, at: new Date(r.visit_at), status: r.status, note: r.note ?? "", asBuyer: r.as_buyer,
     address: r.listing.address, price: Number(r.listing.price), mode: r.listing.mode, type: TYPE[r.listing.type] ?? r.listing.type,
-    cover: r.listing.cover ? photoUrl(r.listing.cover) : null, otherName: r.other?.name || "Nestmap user",
+    cover: r.listing.cover ? photoUrl(r.listing.cover) : null, otherName: r.other?.name || "Nexovo user",
   }));
 }
 

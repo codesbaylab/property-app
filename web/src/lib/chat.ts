@@ -50,7 +50,7 @@ export async function loadConversations(): Promise<Conversation[]> {
   return (data as ConvRow[]).map(r => ({
     id: r.id, listingId: r.listing_id, asBuyer: r.as_buyer, lastMessageAt: r.last_message_at,
     address: r.listing.address, price: Number(r.listing.price), mode: r.listing.mode, type: r.listing.type, listingLive: r.listing.status === "live",
-    cover: r.listing.cover ? photoUrl(r.listing.cover) : null, otherName: r.other?.name || "Nestmap user", otherVerified: !!r.other?.verified,
+    cover: r.listing.cover ? photoUrl(r.listing.cover) : null, otherName: r.other?.name || "Nexovo user", otherVerified: !!r.other?.verified,
     last: r.last, unread: Number(r.unread),
   }));
 }

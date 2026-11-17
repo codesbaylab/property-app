@@ -1,4 +1,4 @@
-# Nestmap web app
+# Nexovo web app
 
 Next.js 16 (App Router, React 19, TypeScript) + MapLibre GL. See `../docs/build-plan.md` for the plan.
 

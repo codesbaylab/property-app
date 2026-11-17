@@ -8,7 +8,7 @@ export async function generateMetadata({ params }: PageProps<"/agent/[id]">): Pr
   const { id } = await params;
   const a = await getAgentProfile(id);
   if (!a) return { title: "Agent not found" };
-  return { title: `${a.name}${a.agency ? ` · ${a.agency}` : ""}`, description: `Verified agent on Nestmap with ${a.liveCount} ${a.liveCount === 1 ? "home" : "homes"} listed.` };
+  return { title: `${a.name}${a.agency ? ` · ${a.agency}` : ""}`, description: `Verified agent on Nexovo with ${a.liveCount} ${a.liveCount === 1 ? "home" : "homes"} listed.` };
 }
 
 // the id is only known per request, so it is read inside a Suspense boundary

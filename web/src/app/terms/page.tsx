@@ -5,9 +5,9 @@ export const metadata: Metadata = { title: "Terms of use" };
 
 export default function Terms() {
   return (
-    <Legal title="Terms of use" intro="These terms are the rules for using Nestmap to find, list and enquire about homes. By creating an account or using the app you agree to them.">
-      <h2>What Nestmap is</h2>
-      <p>Nestmap is a place where property owners and agents list homes, and where people looking to buy or rent can find them on a map. We are a listing platform. We are not a party to any sale, rent or agreement between you and another person, and we do not guarantee that any listing is accurate, available or lawful.</p>
+    <Legal title="Terms of use" intro="These terms are the rules for using Nexovo to find, list and enquire about homes. By creating an account or using the app you agree to them.">
+      <h2>What Nexovo is</h2>
+      <p>Nexovo is a place where property owners and agents list homes, and where people looking to buy or rent can find them on a map. We are a listing platform. We are not a party to any sale, rent or agreement between you and another person, and we do not guarantee that any listing is accurate, available or lawful.</p>
 
       <h2>Your account</h2>
       <ul>
@@ -34,13 +34,13 @@ export default function Terms() {
       </ul>
 
       <h2>Messages and meeting people</h2>
-      <p>Messages in Nestmap are between you and the other person. Be careful when you pay any money or visit a property: see it in person, check the documents, and never pay a deposit before you have verified the owner. You can report a listing or a person from the app and we will look into it.</p>
+      <p>Messages in Nexovo are between you and the other person. Be careful when you pay any money or visit a property: see it in person, check the documents, and never pay a deposit before you have verified the owner. You can report a listing or a person from the app and we will look into it.</p>
 
       <h2>Your content</h2>
-      <p>You keep ownership of the photos and text you upload. You give Nestmap permission to show them in the app, on shared listing links and in previews, for as long as the listing is up. Do not upload anything you do not have the right to share.</p>
+      <p>You keep ownership of the photos and text you upload. You give Nexovo permission to show them in the app, on shared listing links and in previews, for as long as the listing is up. Do not upload anything you do not have the right to share.</p>
 
       <h2>Our responsibility</h2>
-      <p>We work to keep Nestmap running and listings genuine, but the app is provided as it is. To the extent the law allows, we are not liable for losses from a deal you make with another person, for wrong or out-of-date listing details, or for the app being unavailable for a time.</p>
+      <p>We work to keep Nexovo running and listings genuine, but the app is provided as it is. To the extent the law allows, we are not liable for losses from a deal you make with another person, for wrong or out-of-date listing details, or for the app being unavailable for a time.</p>
 
       <h2>Changes and law</h2>
       <p>We may update these terms and will change the date above when we do. Using the app after a change means you accept it. These terms are governed by the laws of India.</p>

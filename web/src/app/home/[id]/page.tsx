@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: PageProps<"/home/[id]">): Pro
   const title = `${fmt(priceFor(l, m), m)}${m === "rent" ? "/mo" : ""} · ${l.type} at ${l.addr}`;
   return {
     title,
-    description: `${spec(l)}. ${m === "rent" ? "For rent" : "For sale"} on Nestmap.`,
+    description: `${spec(l)}. ${m === "rent" ? "For rent" : "For sale"} on Nexovo.`,
     openGraph: { title, description: spec(l), images: [{ url: l.img, width: 600, height: 450 }] },
   };
 }

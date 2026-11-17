@@ -7,11 +7,11 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 
 export const metadata: Metadata = {
-  title: { default: "Nestmap — homes on a map", template: "%s · Nestmap" },
+  title: { default: "Nexovo — homes on a map", template: "%s · Nexovo" },
   description: "Find homes on a map. Buy, rent, no noise.",
   manifest: "/manifest.json",
   icons: { icon: "/icons/favicon.png", apple: "/icons/apple-touch-icon.png" },
-  appleWebApp: { capable: true, title: "Nestmap" },
+  appleWebApp: { capable: true, title: "Nexovo" },
 };
 
 export const viewport: Viewport = {
