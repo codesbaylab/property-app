@@ -78,24 +78,15 @@ export function useSaved(userId: string | null) {
 }
 
 export type ThemePref = "auto" | "light" | "dark";
-const subscribeDark = (cb: () => void) => {
-  const mq = matchMedia("(prefers-color-scheme: dark)");
-  mq.addEventListener("change", cb);
-  return () => mq.removeEventListener("change", cb);
-};
 
-/** Light / dark / auto. `dark` is the resolved value (the map needs it). */
+/** The app is always light, whatever the phone or browser prefers. `dark` stays in the return value because the map reads it. */
 export function useTheme() {
-  const stored = useStored("theme");
-  const pref: ThemePref = stored === "light" || stored === "dark" ? stored : "auto";
-  const systemDark = useSyncExternalStore(subscribeDark, () => matchMedia("(prefers-color-scheme: dark)").matches, () => false);
-  const dark = pref === "dark" || (pref === "auto" && systemDark);
   useEffect(() => {
-    document.documentElement.dataset.theme = pref === "auto" ? "" : pref;
-    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", dark ? "#10141a" : "#ffffff");
-  }, [pref, dark]);
-  const setPref = useCallback((p: ThemePref) => write("theme", p), []);
-  return { pref, setPref, dark };
+    document.documentElement.dataset.theme = "light";
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", "#ffffff");
+  }, []);
+  const setPref = useCallback((_p: ThemePref) => {}, []);
+  return { pref: "light" as ThemePref, setPref, dark: false };
 }
 
 /** A small message that fades after two seconds. */

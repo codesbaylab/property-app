@@ -185,10 +185,6 @@ export function ProfileView({ pref, onPref, onToast, account, canSignIn, signIn,
             <div className="tx"><b>Admin dashboard</b><small>{ADMIN_LABEL[account.adminRole]} · review queue, users, reports</small></div><Icon name="chevron" />
           </a>
         )}
-        <div className="li">
-          <div className="ic"><Icon name="moon" /></div><div className="tx"><b>Appearance</b></div>
-          <div className="seg">{(["auto", "light", "dark"] as ThemePref[]).map(t => <button key={t} className={pref === t ? "on" : ""} onClick={() => onPref(t)}>{t[0].toUpperCase() + t.slice(1)}</button>)}</div>
-        </div>
         {account?.verifiedAgent && onOpenLeads && (
           <button className="li" onClick={onOpenLeads}>
             <div className="ic"><Icon name="chat" /></div><div className="tx"><b>Leads</b><small>Follow up with everyone who asked about your homes</small></div><Icon name="chevron" />

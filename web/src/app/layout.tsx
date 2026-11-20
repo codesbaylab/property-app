@@ -23,13 +23,9 @@ export const viewport: Viewport = {
   themeColor: "#ffffff",
 };
 
-// sets the saved light / dark choice before the first paint so the page never flashes
-const themeScript = "try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}";
-
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={inter.variable} suppressHydrationWarning>
-      <head><script dangerouslySetInnerHTML={{ __html: themeScript }} /></head>
+    <html lang="en" data-theme="light" className={inter.variable} suppressHydrationWarning>
       <body><NoPageZoom /><ButtonFeedback />{children}</body>
     </html>
   );
